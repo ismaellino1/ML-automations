@@ -42,7 +42,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT core.execute_control_plane_action_v2($1::UUID,$2::UUID,$3::TEXT,$4::JSONB,$5::TEXT,$6::TEXT) AS result;",
+        "query": "SELECT core.execute_control_plane_action_final($1::UUID,$2::UUID,$3::TEXT,$4::JSONB,$5::TEXT,$6::TEXT) AS result;",
         "options": {
           "queryReplacement": "={{ [$json.req.actor_user_id,$json.req.business_id,$json.req.action,JSON.stringify($json.req.arguments),$json.req.idempotency_key,$execution.id] }}"
         }

@@ -46,16 +46,19 @@ run "$MIGRATIONS/049_observability.sql"
 run "$MIGRATIONS/050_security_rls.sql"
 run "$MIGRATIONS/051_whatsapp_calendar_hardening.sql"
 run "$MIGRATIONS/052_engagement_automation_v3.sql"
+run "$MIGRATIONS/055_control_plane_final.sql"
 run "$MIGRATIONS/056_whatsapp_webhook_final.sql"
 run "$MIGRATIONS/057_ai_runtime_policy_final.sql"
-# NOTE: 053 (waitlist), 054 (runtime_final) and 055 (control_plane_final)
-# are intentionally NOT applied by this harness. Unlike PL/pgSQL function
-# bodies (which are late-bound and apply fine even when a function they
-# call doesn't exist yet), 053's CREATE TABLE has real FOREIGN KEY
-# constraints against core.services/core.professionals - the full
-# appointments-domain schema (006,013,015-019,026,029,035-042), which this
-# harness does not build because P0.1-P0.4/P0.8's scope is the messaging/
-# job-queue/observability chain, not appointments. Building that fuller
+# NOTE: 053 (waitlist) and 054 (runtime_final) are intentionally NOT applied
+# by this harness. Unlike PL/pgSQL function bodies (which are late-bound and
+# apply fine even when a function they call doesn't exist yet), 053's
+# CREATE TABLE has real FOREIGN KEY constraints against
+# core.services/core.professionals - the full appointments-domain schema
+# (006,013,015-019,026,029,035-042), which this harness does not build
+# because P0.1-P0.5/P0.7/P0.8's scope is the messaging/job-queue/
+# observability/control-plane chain, not appointments. 055 applies fine on
+# its own (its appointments-domain references are function-body forward
+# references, not table FKs) and is included for P0.7. Building the fuller
 # fixture (or, better, applying the REAL 006 etc. migrations directly) is
 # legitimate future work for a P1 integration harness - see
 # docs/AUDIT/PHASE_A.md and the P0 completion report for this boundary.

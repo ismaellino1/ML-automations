@@ -47,10 +47,25 @@ CREATE TABLE IF NOT EXISTS core.integration_job_attempts (
   provider_response JSONB
 );
 
+-- P0.8 CORRECTION (2026-09-19): p_priority was SMALLINT. Postgres does not
+-- implicitly coerce a bare integer literal (e.g. `80`) to smallint during
+-- function overload resolution (only quoted/"unknown"-typed literals, or an
+-- explicit ::smallint cast, resolve) - only an assignment-level cast, which
+-- does not apply to function-call argument matching. Every one of this
+-- function's 12 call sites across 044/045/048/051/052/054 passes a bare
+-- integer literal for this argument (e.g. `...,80,5,now(),...`), so EVERY
+-- call was failing at runtime with "function does not exist" - discovered
+-- only by actually executing this migration chain against a real Postgres
+-- engine (see supabase/tests/p0/009_p0_8_campaigns_and_media.sql), not by
+-- reading the SQL text. Fixed by widening the parameter to INTEGER (the
+-- underlying core.integration_jobs.priority column stays SMALLINT - integer
+-- -> smallint on INSERT is a normal, always-allowed assignment cast; the
+-- problem was specific to function-call overload resolution, not storage).
+-- This is a single fix at the signature, not 12 individual call-site casts.
 CREATE OR REPLACE FUNCTION core.enqueue_integration_job_v1(
  p_business_id UUID,p_job_type TEXT,p_operation TEXT,p_payload JSONB,
  p_dedupe_key TEXT DEFAULT NULL,p_subject_type TEXT DEFAULT NULL,p_subject_id UUID DEFAULT NULL,
- p_priority SMALLINT DEFAULT 100,p_max_attempts INTEGER DEFAULT 8,p_next_attempt_at TIMESTAMPTZ DEFAULT now(),
+ p_priority INTEGER DEFAULT 100,p_max_attempts INTEGER DEFAULT 8,p_next_attempt_at TIMESTAMPTZ DEFAULT now(),
  p_correlation_id TEXT DEFAULT NULL,p_causal_job_id UUID DEFAULT NULL
 ) RETURNS UUID LANGUAGE plpgsql AS $$
 DECLARE v_id UUID;

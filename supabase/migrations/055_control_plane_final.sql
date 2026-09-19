@@ -1,5 +1,35 @@
 -- 055_control_plane_final.sql
 -- Complete audited Control Plane for ML Admin / ML Manager / ML Employee.
+--
+-- P0.7 DECISION (2026-09-19): this is now the single canonical control-plane
+-- entry point. Before this fix, supabase/functions/control-api/index.ts and
+-- n8n/08_ml_control_plane.json both called execute_control_plane_action_v2
+-- (047) instead - which only ever implemented 3 actions
+-- (SET_MARKETING_CONSENT, UPSERT_PRODUCT, CREATE_CAMPAIGN) - making this
+-- complete, ~18-action, per-action-RBAC implementation dead code. Audited
+-- before switching (see docs/AUDIT/PHASE_A.md D.4 and
+-- supabase/tests/p0/007_p0_7_control_plane.sql):
+--   - RBAC: authorize_action_v2's per-action allowlists here are a strict
+--     superset of what authorize_action_v1 (047) permitted, and match this
+--     function's own implemented action set 1:1 (047's allowlist described
+--     actions - CREATE_APPOINTMENT, CANCEL_APPOINTMENT, etc. - that 047's
+--     own dispatcher never actually implemented).
+--   - Payload/response shape: identical 6 named parameters
+--     (p_actor_user_id, p_business_id, p_action, p_arguments,
+--     p_idempotency_key, p_execution_ref) as 047, so no caller-side
+--     reshaping was needed.
+--   - Frontend compatibility: apps/ml-console/src/lib/supabase.ts's
+--     control() helper already sends exactly this shape.
+--   - core.execute_control_plane_action_v2 (047) is NOT retired - this
+--     function delegates 2 of its actions (UPSERT_PRODUCT, CREATE_CAMPAIGN)
+--     to it as an internal helper. It must no longer be treated as an
+--     independent entry point.
+--   - Known limitation carried over from both versions, not introduced by
+--     this decision: p_idempotency_key is required but not itself
+--     deduplicated at this dispatcher level (no idempotency-key replay
+--     cache) - safety today relies on the underlying operations (upserts,
+--     core.cancel_appointment's own idempotency) being naturally safe to
+--     repeat. See KNOWN_LIMITATIONS.md.
 
 ALTER TABLE core.business_memberships
   ADD COLUMN IF NOT EXISTS professional_id UUID;

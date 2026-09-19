@@ -14,7 +14,15 @@ serve(async(req)=>{
   if(error||!user) return out({ok:false,code:"UNAUTHENTICATED"},401);
   const admin=createClient(url,service,{auth:{persistSession:false}});
   const body=await req.json();
-  const {data,error:rpcError}=await admin.schema("core").rpc("execute_control_plane_action_v2",{
+  // P0.7: execute_control_plane_action_final (migration 055) is the
+  // complete, audited implementation (~18 actions, per-action RBAC
+  // allowlists via authorize_action_v2) - execute_control_plane_action_v2
+  // (047) only ever implemented 3 actions and was never the intended
+  // production entry point. _final internally delegates 2 of its actions
+  // back to _v2 as a helper, so _v2 stays defined but is no longer an
+  // independent entry point. See docs/AUDIT/PHASE_A.md D.4 and
+  // docs/DECISIONS.md.
+  const {data,error:rpcError}=await admin.schema("core").rpc("execute_control_plane_action_final",{
     p_actor_user_id:user.id,p_business_id:body.business_id,p_action:body.action,
     p_arguments:body.arguments??{},p_idempotency_key:body.idempotency_key??crypto.randomUUID(),
     p_execution_ref:body.request_id??crypto.randomUUID()

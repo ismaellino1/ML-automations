@@ -91,15 +91,24 @@ BEGIN
  SELECT to_jsonb(upd) FROM upd;
 END $$;
 
+-- P0.4 CORRECTION (2026-09-19): the original version captured the job row
+-- via `UPDATE ... SET lease_owner=NULL ... RETURNING * INTO v`, so v.lease_owner
+-- was already NULL by the time it was written to integration_job_attempts -
+-- every successful completion lost its worker attribution (worker_ref
+-- always NULL), unlike fail_integration_job_v1 below which correctly reads
+-- the row BEFORE nulling it. Fixed by matching that same SELECT ... FOR
+-- UPDATE first, capture, then UPDATE idiom. See docs/AUDIT/PHASE_A.md D.7
+-- and supabase/tests/p0/004_p0_4_job_worker_ref.sql.
 CREATE OR REPLACE FUNCTION core.complete_integration_job_v1(
  p_job_id UUID,p_provider_response JSONB DEFAULT '{}'::jsonb
 ) RETURNS JSONB LANGUAGE plpgsql AS $$
 DECLARE v core.integration_jobs%rowtype;
 BEGIN
+ SELECT * INTO v FROM core.integration_jobs WHERE id=p_job_id AND status='RUNNING' FOR UPDATE;
+ IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'code','JOB_NOT_RUNNING'); END IF;
  UPDATE core.integration_jobs SET status='SUCCEEDED',provider_response=coalesce(p_provider_response,'{}'::jsonb),
    completed_at=now(),lease_owner=NULL,lease_expires_at=NULL,updated_at=now()
- WHERE id=p_job_id AND status='RUNNING' RETURNING * INTO v;
- IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'code','JOB_NOT_RUNNING'); END IF;
+ WHERE id=v.id;
  INSERT INTO core.integration_job_attempts(job_id,attempt_no,worker_ref,finished_at,outcome,provider_response)
  VALUES(v.id,v.attempts,v.lease_owner,now(),'SUCCEEDED',p_provider_response);
  RETURN jsonb_build_object('ok',true,'code','JOB_COMPLETED','job_id',v.id);

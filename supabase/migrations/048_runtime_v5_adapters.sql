@@ -49,6 +49,16 @@ RETURNS JSONB LANGUAGE sql AS $$ SELECT core.complete_integration_job_v1(p_job_i
 CREATE OR REPLACE FUNCTION core.fail_calendar_sync_job(p_job_id UUID,p_error TEXT,p_provider_response JSONB)
 RETURNS JSONB LANGUAGE sql AS $$ SELECT core.fail_integration_job_v1(p_job_id,p_error,p_provider_response) $$;
 
+-- P0.5 CORRECTION (2026-09-19): the original SELECT read the nonexistent
+-- column core.businesses.code - the real column is business_code (confirmed
+-- both by a prior STAGING introspection, see
+-- reference/handoff/10_DATABASE_REALITY_AND_PATCHES/01_KNOWN_DATABASE_FACTS.md,
+-- and directly by migration 055's own CREATE_BUSINESS action, which INSERTs
+-- into business_code). This is in the hot path of every inbound WhatsApp
+-- message. This file is now the single canonical 048 - there is no separate
+-- "_fixed"/"_v2" file; the correction lives here, in git history, per this
+-- comment. See docs/AUDIT/PHASE_A.md D.8 and
+-- supabase/tests/p0/005_p0_5_business_code.sql.
 CREATE OR REPLACE FUNCTION core.ingest_whatsapp_event_v1(
  p_external_channel_id TEXT,p_channel_type TEXT,p_provider TEXT,p_external_user_id TEXT,p_profile_name TEXT,
  p_idempotency_key TEXT,p_external_message_id TEXT,p_message_type TEXT,p_interaction JSONB,p_media JSONB,p_envelope JSONB,
@@ -60,7 +70,7 @@ BEGIN
  IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'code','BUSINESS_CHANNEL_NOT_FOUND'); END IF;
  business_id:=bc.business_id;
  prep:=core.prepare_assistant_turn(
-   (SELECT code FROM core.businesses WHERE id=business_id),p_channel_type,p_provider,p_external_user_id,
+   (SELECT business_code FROM core.businesses WHERE id=business_id),p_channel_type,p_provider,p_external_user_id,
    p_idempotency_key,p_external_message_id,p_message_type,p_envelope->>'text',
    coalesce(p_envelope->'raw_payload','{}'::jsonb),p_provider_timestamp,20);
  IF coalesce((prep#>>'{turn,should_process}')::boolean,false) IS NOT TRUE THEN

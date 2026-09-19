@@ -1,5 +1,31 @@
 -- 051_whatsapp_calendar_hardening.sql
 -- Production-grade WhatsApp rendering, delivery receipts and Calendar job enrichment.
+--
+-- P0.1 CORRECTION (2026-09-19, ML Automações P0 hardening):
+-- This migration originally tried to CREATE TABLE core.message_delivery_events
+-- with a different, incompatible column set (message_id/payload, no event_key)
+-- than the real table migration 027 already creates (applied_message_id/
+-- raw_payload/event_key UNIQUE). Because the CREATE used IF NOT EXISTS, it was
+-- a silent no-op whenever 027's table already existed - but the INSERT this
+-- migration's delivery-status function performed referenced columns that do
+-- not exist on the real table, which fails at runtime (undefined_column) the
+-- first time a WhatsApp delivery-status webhook is processed. It also had no
+-- deferred/pending-bind handling, so a callback arriving before the outbound
+-- message was bound to its provider id was silently dropped instead of
+-- queued for replay.
+--
+-- Fixed by (a) removing the colliding CREATE TABLE entirely - 027's table is
+-- the single source of truth for this contract - and (b) rewriting
+-- core.ingest_whatsapp_delivery_status_v1 to resolve the tenant from the
+-- WhatsApp channel (external_channel_id / phone_number_id) and delegate the
+-- actual event recording, idempotency (event_key), monotonic status
+-- transitions, and pending-bind replay entirely to 027's own
+-- core.apply_message_delivery_status / core.bind_outbound_external_message.
+-- See docs/AUDIT/PHASE_A.md D.2 and supabase/tests/p0/001_p0_1_message_delivery_status.sql.
+--
+-- core.message_delivery_events is NOT redefined here. It already exists,
+-- exactly as migration 027 created it, and must never be altered to "fit"
+-- a newer migration's assumptions (existing valid contract > new assumptions).
 
 
 -- Delivery/campaign columns are created here because delivery functions below
@@ -13,25 +39,6 @@ ALTER TABLE core.campaign_recipients
     ADD COLUMN IF NOT EXISTS converted_at TIMESTAMPTZ,
     ADD COLUMN IF NOT EXISTS attributed_appointment_id UUID,
     ADD COLUMN IF NOT EXISTS failure_reason TEXT;
-
-CREATE TABLE IF NOT EXISTS core.message_delivery_events (
-    id BIGSERIAL PRIMARY KEY,
-    business_id UUID NOT NULL,
-    message_id UUID NOT NULL,
-    provider VARCHAR(50) NOT NULL,
-    external_message_id TEXT,
-    delivery_status VARCHAR(30) NOT NULL,
-    provider_timestamp TIMESTAMPTZ,
-    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    CONSTRAINT fk_delivery_event_message
-        FOREIGN KEY (business_id, message_id)
-        REFERENCES core.messages(business_id, id)
-        ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_message_delivery_events_external
-ON core.message_delivery_events(business_id, provider, external_message_id, created_at DESC);
 
 CREATE OR REPLACE FUNCTION core.build_whatsapp_payload_v3(
     p_recipient TEXT,
@@ -490,10 +497,20 @@ BEGIN
 END;
 $function$;
 
+-- P0.1: rewritten to resolve the tenant from the WhatsApp channel (needed
+-- BEFORE the outbound message is necessarily bound - a delivery-status
+-- callback can legitimately arrive before the bind), then delegate the
+-- actual event bookkeeping to migration 027's real, untouched contract.
+-- p_external_channel_id is the Meta phone_number_id the webhook arrived on;
+-- see n8n/01_ml_inbound_gateway.json (node "01 - NORMALIZAR EVENTO META",
+-- DELIVERY_STATUS branch) which now extracts it into event.channel, and
+-- 056_whatsapp_webhook_final.sql which passes it through.
 CREATE OR REPLACE FUNCTION core.ingest_whatsapp_delivery_status_v1(
+    p_external_channel_id TEXT,
+    p_provider TEXT,
     p_external_message_id TEXT,
     p_status TEXT,
-    p_provider_timestamp TIMESTAMPTZ,
+    p_provider_timestamp TIMESTAMPTZ DEFAULT NULL,
     p_payload JSONB DEFAULT '{}'::jsonb
 )
 RETURNS JSONB
@@ -501,49 +518,71 @@ LANGUAGE plpgsql
 VOLATILE
 AS $function$
 DECLARE
-    v_message core.messages%ROWTYPE;
-    v_status TEXT := upper(coalesce(p_status,''));
-    v_allowed TEXT[] := ARRAY['SENT','DELIVERED','READ','FAILED'];
+    v_provider TEXT := coalesce(nullif(btrim(p_provider),''),'META');
+    v_business_id UUID;
+    v_result JSONB;
 BEGIN
-    IF NOT (v_status = ANY(v_allowed)) THEN
-        RETURN jsonb_build_object('ok',true,'code','DELIVERY_STATUS_IGNORED','status',v_status);
+    IF nullif(btrim(p_external_channel_id),'') IS NULL THEN
+        RETURN jsonb_build_object('ok',false,'code','EXTERNAL_CHANNEL_ID_REQUIRED');
     END IF;
 
-    SELECT * INTO v_message
-    FROM core.messages m
-    WHERE m.provider='META' AND m.external_message_id=p_external_message_id
-    ORDER BY m.created_at DESC LIMIT 1
-    FOR UPDATE;
-
-    IF NOT FOUND THEN
-        RETURN jsonb_build_object('ok',true,'code','DELIVERY_MESSAGE_NOT_FOUND','external_message_id',p_external_message_id);
+    IF nullif(btrim(p_external_message_id),'') IS NULL THEN
+        RETURN jsonb_build_object('ok',false,'code','EXTERNAL_MESSAGE_ID_REQUIRED');
     END IF;
 
-    -- Never downgrade a delivery state. FAILED is terminal only if a later success wasn't already observed.
-    IF v_status='READ'
-       OR (v_status='DELIVERED' AND v_message.delivery_status NOT IN ('READ'))
-       OR (v_status='SENT' AND v_message.delivery_status IN ('QUEUED','NOT_APPLICABLE'))
-       OR (v_status='FAILED' AND v_message.delivery_status NOT IN ('DELIVERED','READ'))
-    THEN
-        UPDATE core.messages
-        SET delivery_status=v_status, updated_at=now()
-        WHERE business_id=v_message.business_id AND id=v_message.id;
+    -- Resolve the tenant from the channel the webhook arrived on. This must
+    -- happen independently of whether the message has been bound yet, so a
+    -- callback that races ahead of the bind can still be recorded and
+    -- deferred (core.apply_message_delivery_status handles the pending-bind
+    -- case) instead of being dropped.
+    SELECT bc.business_id INTO v_business_id
+    FROM core.business_channels bc
+    WHERE bc.provider = v_provider
+      AND bc.external_channel_id = p_external_channel_id
+      AND bc.status = 'ACTIVE'
+    ORDER BY bc.updated_at DESC
+    LIMIT 1;
+
+    IF v_business_id IS NULL THEN
+        RETURN jsonb_build_object('ok',false,'code','BUSINESS_CHANNEL_NOT_FOUND');
     END IF;
 
-    INSERT INTO core.message_delivery_events(
-        business_id,message_id,provider,external_message_id,delivery_status,provider_timestamp,payload
-    ) VALUES (
-        v_message.business_id,v_message.id,'META',p_external_message_id,v_status,p_provider_timestamp,coalesce(p_payload,'{}'::jsonb)
+    -- Idempotency (event_key), monotonic status transitions, and pending-bind
+    -- deferral all live in 027's real, canonical implementation. Do not
+    -- duplicate that logic here.
+    v_result := core.apply_message_delivery_status(
+        v_business_id,
+        v_provider,
+        p_external_message_id,
+        p_status,
+        p_provider_timestamp,
+        NULL,
+        coalesce(p_payload,'{}'::jsonb)
     );
 
-    UPDATE core.campaign_recipients cr
-    SET status=CASE v_status WHEN 'READ' THEN 'READ' WHEN 'DELIVERED' THEN 'DELIVERED' WHEN 'FAILED' THEN 'FAILED' ELSE cr.status END,
-        delivered_at=CASE WHEN v_status IN ('DELIVERED','READ') THEN coalesce(cr.delivered_at,now()) ELSE cr.delivered_at END,
-        read_at=CASE WHEN v_status='READ' THEN coalesce(cr.read_at,now()) ELSE cr.read_at END,
-        updated_at=now()
-    WHERE cr.outbound_message_id=v_message.id;
+    -- Preserve the one genuinely new side effect this migration was adding
+    -- on top of 027: keep campaign delivery/read timestamps in sync. Only
+    -- run it once the event has actually been attributed to a message -
+    -- the pending-bind case has no message_id yet and is replayed later by
+    -- core.bind_outbound_external_message, which re-enters this same
+    -- 027 function (not this wrapper) for each pending event.
+    IF coalesce((v_result->>'ok')::boolean,false) AND (v_result->>'message_id') IS NOT NULL THEN
+        UPDATE core.campaign_recipients cr
+        SET status = CASE v_result->>'delivery_status'
+                       WHEN 'READ' THEN 'READ'
+                       WHEN 'DELIVERED' THEN 'DELIVERED'
+                       WHEN 'FAILED' THEN 'FAILED'
+                       ELSE cr.status
+                     END,
+            delivered_at = CASE WHEN v_result->>'delivery_status' IN ('DELIVERED','READ')
+                                 THEN coalesce(cr.delivered_at, now()) ELSE cr.delivered_at END,
+            read_at = CASE WHEN v_result->>'delivery_status' = 'READ'
+                            THEN coalesce(cr.read_at, now()) ELSE cr.read_at END,
+            updated_at = now()
+        WHERE cr.outbound_message_id = (v_result->>'message_id')::uuid;
+    END IF;
 
-    RETURN jsonb_build_object('ok',true,'code','DELIVERY_STATUS_RECORDED','message_id',v_message.id,'status',v_status);
+    RETURN v_result;
 END;
 $function$;
 

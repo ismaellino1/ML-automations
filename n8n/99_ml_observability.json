@@ -15,7 +15,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const e = $json ?? {};\nconst incident = {\n  source: 'N8N',\n  workflow_id: e.workflow?.id ?? null,\n  workflow_name: e.workflow?.name ?? null,\n  execution_id: e.execution?.id ?? null,\n  execution_url: e.execution?.url ?? null,\n  retry_of: e.execution?.retryOf ?? null,\n  last_node_executed: e.execution?.lastNodeExecuted ?? null,\n  error_message: e.execution?.error?.message ?? e.error?.message ?? null,\n  error_stack: e.execution?.error?.stack ?? e.error?.stack ?? null,\n  mode: e.execution?.mode ?? null,\n  occurred_at: new Date().toISOString(),\n  raw: e\n};\nreturn { json: { incident } };"
+        "jsCode": "const e = $json ?? {};\nconst errorMessage = e.execution?.error?.message ?? e.error?.message ?? null;\nconst codeMatch = errorMessage ? /^([A-Z0-9_]{3,60}):/.exec(errorMessage) : null;\nconst incident = {\n  source: 'N8N',\n  severity: 'ERROR',\n  error_code: codeMatch ? codeMatch[1] : 'N8N_WORKFLOW_ERROR',\n  workflow_id: e.workflow?.id ?? null,\n  workflow_name: e.workflow?.name ?? null,\n  execution_id: e.execution?.id ?? null,\n  execution_url: e.execution?.url ?? null,\n  retry_of: e.execution?.retryOf ?? null,\n  last_node_executed: e.execution?.lastNodeExecuted ?? null,\n  error_message: errorMessage,\n  error_stack: e.execution?.error?.stack ?? e.error?.stack ?? null,\n  mode: e.execution?.mode ?? null,\n  occurred_at: new Date().toISOString(),\n  raw: e\n};\nreturn { json: { incident } };"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -29,9 +29,9 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT core.record_automation_incident_v1(\n    $1::JSONB\n) AS result;",
+        "query": "SELECT core.record_automation_incident_v1(\n    NULL::UUID,\n    $1::TEXT,\n    $2::TEXT,\n    $3::TEXT,\n    $4::TEXT,\n    $5::TEXT,\n    $6::TEXT,\n    $7::JSONB\n) AS result;",
         "options": {
-          "queryReplacement": "={{ [JSON.stringify($json.incident)] }}"
+          "queryReplacement": "={{ [$json.incident.severity, $json.incident.workflow_name ?? $json.incident.workflow_id, $json.incident.execution_id, $json.incident.last_node_executed, $json.incident.error_code, $json.incident.error_message, JSON.stringify($json.incident)] }}"
         }
       },
       "type": "n8n-nodes-base.postgres",

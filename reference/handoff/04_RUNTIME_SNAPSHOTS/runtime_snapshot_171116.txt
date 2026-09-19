@@ -1,0 +1,527 @@
+[
+  {
+    "validated_command": {
+      "valid": true,
+      "executable": true,
+      "route": "CORE",
+      "kind": "BUSINESS_ACTION",
+      "intent": "RESCHEDULE_APPOINTMENT",
+      "action": "RESCHEDULE_APPOINTMENT",
+      "action_args": {
+        "service_id": "665265b3-a270-4767-b56d-549dc48a5a9d",
+        "professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+        "date": "2026-09-21",
+        "period": null,
+        "time": "09:45",
+        "time_from": null,
+        "time_until": null,
+        "option_number": null,
+        "appointment_id": "964dad42-641e-409e-a51b-00a42b8fc060",
+        "allow_professional_fallback": false
+      },
+      "service": {
+        "name": "Corte",
+        "price": 30,
+        "currency": "BRL",
+        "service_id": "665265b3-a270-4767-b56d-549dc48a5a9d",
+        "description": "Corte masculino",
+        "service_code": "CORTE",
+        "professionals": [
+          {
+            "name": "João",
+            "description": "Barbeiro",
+            "display_name": "João",
+            "effective_price": 30,
+            "professional_id": "dfa370a5-8d8b-4451-b01b-045e72635e84",
+            "calendar_provider": null,
+            "professional_code": "BARB01",
+            "external_calendar_id": null,
+            "effective_duration_minutes": 30
+          },
+          {
+            "name": "Pedro",
+            "description": "Barbeiro",
+            "display_name": "Pedro",
+            "effective_price": 30,
+            "professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+            "calendar_provider": "GOOGLE",
+            "professional_code": "BARB02",
+            "external_calendar_id": "<REDACTED_CALENDAR_ID>",
+            "effective_duration_minutes": 30
+          }
+        ],
+        "duration_minutes": 30,
+        "buffer_after_minutes": 0,
+        "buffer_before_minutes": 0
+      },
+      "professional": {
+        "name": "Pedro",
+        "description": "Barbeiro",
+        "display_name": "Pedro",
+        "professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+        "calendar_provider": "GOOGLE",
+        "professional_code": "BARB02",
+        "external_calendar_id": "<REDACTED_CALENDAR_ID>"
+      },
+      "missing_information": [],
+      "customer_meaning": "Cliente quer remarcar o corte com Pedro agendado para 21/09 às 09:45 e verificar outro horário.",
+      "direct_response": null,
+      "confidence": 0.99,
+      "minimum_confidence": 0.7,
+      "errors": [],
+      "warnings": []
+    },
+    "context": {
+      "ok": true,
+      "turn": {
+        "ok": true,
+        "code": "INBOUND_REGISTERED",
+        "duplicate": false,
+        "message_id": "27967db4-dcfa-4f9a-87de-57f738c97f64",
+        "should_process": true,
+        "processing_status": "RECEIVED",
+        "external_message_id": "wamid.HBgMNTU4ODk3MTYzMjk1FQIAEhgWM0VCMEQyQUE3OTBCMDc4QjQ0OUI0MgA="
+      },
+      "brand": {
+        "allow_slang": true,
+        "farewell_text": "Qualquer coisa, é só chamar.",
+        "greeting_text": "Olá! Como posso te ajudar?",
+        "assistant_name": "Assistente da Barbearia",
+        "brand_personality": "Atendimento cordial, direto, natural e profissional.",
+        "default_treatment": "CORDIAL",
+        "minimum_formality": 20,
+        "use_customer_name": true,
+        "maximum_informality": 80,
+        "response_guidelines": "Adaptar o estilo ao cliente sem exagerar, mantendo clareza, respeito e naturalidade.",
+        "emoji_max_per_message": 2
+      },
+      "clock": {
+        "timezone": "America/Sao_Paulo",
+        "local_date": "2026-09-17",
+        "local_time": "14:10",
+        "local_datetime": "2026-09-17 14:10:29"
+      },
+      "channel": {
+        "id": "d2d5d2e3-3f0a-4fbc-bbad-78cafc607bc7",
+        "metadata": {
+          "source": "WHATSAPP_CLOUD_API",
+          "environment": "TEST"
+        },
+        "provider": "META",
+        "channel_type": "WHATSAPP",
+        "credential_key": null,
+        "sender_address": null,
+        "external_account_id": null,
+        "external_channel_id": "1346443965213498"
+      },
+      "business": {
+        "id": "89dffc95-4b4c-41dd-8da9-f3aeb61a8131",
+        "code": "BARB001",
+        "name": "Barbearia Laboratório",
+        "locale": "pt-BR",
+        "timezone": "America/Sao_Paulo",
+        "plan_code": "DEV"
+      },
+      "customer": {
+        "id": "88ee445a-e7c2-4770-a0eb-979b2eb8cc0f",
+        "name": "Mael Guedes",
+        "exists": true,
+        "status": "ACTIVE",
+        "channel_id": "4de322e5-9c6b-49f2-9425-2d6ac300ace8",
+        "preferences": {},
+        "display_address": "<REDACTED_PHONE>",
+        "external_user_id": "<REDACTED_PHONE>",
+        "communication_profile": {}
+      },
+      "services": [
+        {
+          "name": "Corte",
+          "price": 30,
+          "currency": "BRL",
+          "service_id": "665265b3-a270-4767-b56d-549dc48a5a9d",
+          "description": "Corte masculino",
+          "service_code": "CORTE",
+          "professionals": [
+            {
+              "name": "João",
+              "description": "Barbeiro",
+              "display_name": "João",
+              "effective_price": 30,
+              "professional_id": "dfa370a5-8d8b-4451-b01b-045e72635e84",
+              "calendar_provider": null,
+              "professional_code": "BARB01",
+              "external_calendar_id": null,
+              "effective_duration_minutes": 30
+            },
+            {
+              "name": "Pedro",
+              "description": "Barbeiro",
+              "display_name": "Pedro",
+              "effective_price": 30,
+              "professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+              "calendar_provider": "GOOGLE",
+              "professional_code": "BARB02",
+              "external_calendar_id": "<REDACTED_CALENDAR_ID>",
+              "effective_duration_minutes": 30
+            }
+          ],
+          "duration_minutes": 30,
+          "buffer_after_minutes": 0,
+          "buffer_before_minutes": 0
+        },
+        {
+          "name": "Barba",
+          "price": 20,
+          "currency": "BRL",
+          "service_id": "aa368079-c9ed-46a1-b404-6e6accc27a11",
+          "description": "Serviço de barba",
+          "service_code": "BARBA",
+          "professionals": [
+            {
+              "name": "João",
+              "description": "Barbeiro",
+              "display_name": "João",
+              "effective_price": 20,
+              "professional_id": "dfa370a5-8d8b-4451-b01b-045e72635e84",
+              "calendar_provider": null,
+              "professional_code": "BARB01",
+              "external_calendar_id": null,
+              "effective_duration_minutes": 30
+            }
+          ],
+          "duration_minutes": 30,
+          "buffer_after_minutes": 0,
+          "buffer_before_minutes": 0
+        },
+        {
+          "name": "Corte + Barba",
+          "price": 45,
+          "currency": "BRL",
+          "service_id": "53e25a2d-a03a-4cee-adf7-06321619da9c",
+          "description": "Corte e barba",
+          "service_code": "COMBO",
+          "professionals": [
+            {
+              "name": "João",
+              "description": "Barbeiro",
+              "display_name": "João",
+              "effective_price": 45,
+              "professional_id": "dfa370a5-8d8b-4451-b01b-045e72635e84",
+              "calendar_provider": null,
+              "professional_code": "BARB01",
+              "external_calendar_id": null,
+              "effective_duration_minutes": 60
+            },
+            {
+              "name": "Pedro",
+              "description": "Barbeiro",
+              "display_name": "Pedro",
+              "effective_price": 45,
+              "professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+              "calendar_provider": "GOOGLE",
+              "professional_code": "BARB02",
+              "external_calendar_id": "<REDACTED_CALENDAR_ID>",
+              "effective_duration_minutes": 60
+            }
+          ],
+          "duration_minutes": 60,
+          "buffer_after_minutes": 0,
+          "buffer_before_minutes": 0
+        }
+      ],
+      "settings": {
+        "extra_settings": {},
+        "waitlist_enabled": true,
+        "reminders_enabled": true,
+        "max_slots_per_offer": 5,
+        "cancellation_enabled": true,
+        "reactivation_enabled": false,
+        "rescheduling_enabled": true,
+        "hold_duration_minutes": 5,
+        "human_handoff_enabled": true,
+        "slot_interval_minutes": 15,
+        "waitlist_max_candidates": 5,
+        "reactivation_cooldown_days": 30,
+        "reactivation_min_completed": 3,
+        "waitlist_offer_ttl_minutes": 10,
+        "cancellation_notice_minutes": 60,
+        "reactivation_min_confidence": 0.75,
+        "reminder_first_hours_before": 24,
+        "rescheduling_notice_minutes": 60,
+        "maximum_booking_horizon_days": 60,
+        "reminder_second_hours_before": 2,
+        "minimum_booking_notice_minutes": 30,
+        "conversation_idle_timeout_minutes": 1440,
+        "max_consecutive_errors_before_handoff": 3
+      },
+      "loaded_at": "2026-09-17T17:10:29.062555+00:00",
+      "ai_settings": {
+        "ai_enabled": true,
+        "response_model": "DEFAULT_FAST",
+        "extra_ai_settings": {},
+        "interpretation_model": "DEFAULT_FAST",
+        "style_analysis_model": "DEFAULT_FAST",
+        "style_adaptation_enabled": true,
+        "minimum_intent_confidence": 0.7,
+        "ai_response_generation_enabled": true
+      },
+      "active_offer": null,
+      "appointments": [
+        {
+          "end_at": "2026-09-17T19:00:00+00:00",
+          "status": "CONFIRMED",
+          "currency": "BRL",
+          "metadata": {},
+          "start_at": "2026-09-17T18:30:00+00:00",
+          "local_end": "16:00",
+          "local_date": "2026-09-17",
+          "local_start": "15:30",
+          "total_price": 30,
+          "cancelled_at": null,
+          "confirmed_at": "2026-09-16T07:51:02.612626+00:00",
+          "appointment_id": "9f94ce1a-1bbd-4ec4-8417-d0739f17455e",
+          "hold_expires_at": "2026-09-16T07:56:02.612626+00:00",
+          "professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+          "professional_name": "Pedro",
+          "total_service_minutes": 30
+        },
+        {
+          "end_at": "2026-09-18T18:00:00+00:00",
+          "status": "CONFIRMED",
+          "currency": "BRL",
+          "metadata": {},
+          "start_at": "2026-09-18T17:30:00+00:00",
+          "local_end": "15:00",
+          "local_date": "2026-09-18",
+          "local_start": "14:30",
+          "total_price": 30,
+          "cancelled_at": null,
+          "confirmed_at": "2026-09-16T08:11:34.060628+00:00",
+          "appointment_id": "b6ed8a86-ce83-49fb-b302-f656844a786c",
+          "hold_expires_at": "2026-09-16T08:16:34.060628+00:00",
+          "professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+          "professional_name": "Pedro",
+          "total_service_minutes": 30
+        },
+        {
+          "end_at": "2026-09-19T18:15:00+00:00",
+          "status": "CONFIRMED",
+          "currency": "BRL",
+          "metadata": {},
+          "start_at": "2026-09-19T17:45:00+00:00",
+          "local_end": "15:15",
+          "local_date": "2026-09-19",
+          "local_start": "14:45",
+          "total_price": 30,
+          "cancelled_at": null,
+          "confirmed_at": "2026-09-16T08:53:25.960024+00:00",
+          "appointment_id": "50b07bdd-849e-44a8-8f2d-bfa2f83256ca",
+          "hold_expires_at": "2026-09-16T08:58:25.960024+00:00",
+          "professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+          "professional_name": "Pedro",
+          "total_service_minutes": 30
+        },
+        {
+          "end_at": "2026-09-21T13:15:00+00:00",
+          "status": "CONFIRMED",
+          "currency": "BRL",
+          "metadata": {},
+          "start_at": "2026-09-21T12:45:00+00:00",
+          "local_end": "10:15",
+          "local_date": "2026-09-21",
+          "local_start": "09:45",
+          "total_price": 30,
+          "cancelled_at": null,
+          "confirmed_at": "2026-09-17T02:10:43.640231+00:00",
+          "appointment_id": "964dad42-641e-409e-a51b-00a42b8fc060",
+          "hold_expires_at": "2026-09-17T02:15:43.640231+00:00",
+          "professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+          "professional_name": "Pedro",
+          "total_service_minutes": 30
+        },
+        {
+          "end_at": "2026-09-21T18:30:00+00:00",
+          "status": "CANCELLED",
+          "currency": "BRL",
+          "metadata": {
+            "cancellation": {
+              "actor_ref": "ML_ADMIN_DEV",
+              "actor_type": "PROFESSIONAL",
+              "cancelled_at": "2026-09-16T16:22:56.778203+00:00",
+              "public_reason": "Precisei me ausentar por um imprevisto pessoal.",
+              "source_channel": "ML_ADMIN",
+              "source_provider": "ML",
+              "actor_customer_id": null,
+              "actor_professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0"
+            }
+          },
+          "start_at": "2026-09-21T18:00:00+00:00",
+          "local_end": "15:30",
+          "local_date": "2026-09-21",
+          "local_start": "15:00",
+          "total_price": 30,
+          "cancelled_at": "2026-09-16T16:22:56.778203+00:00",
+          "confirmed_at": "2026-09-16T09:10:04.223947+00:00",
+          "appointment_id": "27d390bb-13b8-4876-9b16-19b035ff69c9",
+          "hold_expires_at": "2026-09-16T09:15:04.223947+00:00",
+          "professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+          "professional_name": "Pedro",
+          "total_service_minutes": 30
+        }
+      ],
+      "conversation": {
+        "id": "3d1a62cc-4f9c-4d82-b298-e2b86cd2e7a7",
+        "slots": {},
+        "exists": true,
+        "status": "OPEN",
+        "context": {
+          "last_analysis": {
+            "intent": "BOOK_APPOINTMENT",
+            "source": "DETERMINISTIC",
+            "message_id": "0012f6fb-817c-44f7-8680-0549e2a49ebf",
+            "analyzed_at": "2026-09-14T21:04:30.385268+00:00",
+            "intent_confidence": 0.99,
+            "service_confidence": 0.95
+          }
+        },
+        "version": 105,
+        "current_intent": null,
+        "pending_action": null,
+        "automation_mode": "AUTO",
+        "context_summary": null,
+        "last_message_at": "2026-09-17T17:10:29.062555+00:00",
+        "session_expires_at": "2026-09-18T17:10:29.062555+00:00"
+      },
+      "professionals": [
+        {
+          "name": "João",
+          "description": "Barbeiro",
+          "display_name": "João",
+          "professional_id": "dfa370a5-8d8b-4451-b01b-045e72635e84",
+          "calendar_provider": null,
+          "professional_code": "BARB01",
+          "external_calendar_id": null
+        },
+        {
+          "name": "Pedro",
+          "description": "Barbeiro",
+          "display_name": "Pedro",
+          "professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+          "calendar_provider": "GOOGLE",
+          "professional_code": "BARB02",
+          "external_calendar_id": "<REDACTED_CALENDAR_ID>"
+        }
+      ],
+      "recent_messages": [
+        {
+          "at": "2026-09-16T18:13:55.57928+00:00",
+          "text": "Mael, encontrei outros horários para o seu corte com o Pedro no dia 21/09. Fica R$ 30. Escolha uma opção abaixo 👇",
+          "intent": null,
+          "direction": "OUTBOUND",
+          "message_id": "63a6376f-1721-4052-913c-bca5c16778ee",
+          "message_type": "TEXT",
+          "intent_confidence": null
+        },
+        {
+          "at": "2026-09-16T18:22:01+00:00",
+          "text": "09:15",
+          "intent": "REBOOK_APPOINTMENT",
+          "direction": "INBOUND",
+          "message_id": "acb8ebab-6e52-4874-a27b-20ce40cecf17",
+          "message_type": "INTERACTIVE",
+          "intent_confidence": 1
+        },
+        {
+          "at": "2026-09-16T18:23:33.953624+00:00",
+          "text": "Essa lista já não está mais ativa. Posso buscar os horários disponíveis novamente pra você.",
+          "intent": null,
+          "direction": "OUTBOUND",
+          "message_id": "5a326764-bc91-401a-a6a2-11e3201e9f0a",
+          "message_type": "TEXT",
+          "intent_confidence": null
+        },
+        {
+          "at": "2026-09-16T19:23:52+00:00",
+          "text": "procura de novo os horários desse agendamento cancelado",
+          "intent": "RESCHEDULE_APPOINTMENT",
+          "direction": "INBOUND",
+          "message_id": "a05e423a-e8d9-400d-9d10-ca83f7a7e221",
+          "message_type": "TEXT",
+          "intent_confidence": 0.99
+        },
+        {
+          "at": "2026-09-16T19:24:07.49614+00:00",
+          "text": "Mael, busquei novamente e encontrei horários com o Pedro para o corte em 21/09 à tarde. Fica R$ 30. Escolha uma opção abaixo 👇",
+          "intent": null,
+          "direction": "OUTBOUND",
+          "message_id": "a2961800-b8db-4ced-b811-2fcd80994098",
+          "message_type": "TEXT",
+          "intent_confidence": null
+        },
+        {
+          "at": "2026-09-17T02:04:03+00:00",
+          "text": "vê outros horários daquele corte que foi cancelado",
+          "intent": "REBOOK_APPOINTMENT",
+          "direction": "INBOUND",
+          "message_id": "eea9bb53-e160-42b8-b0a3-c21d120caf21",
+          "message_type": "TEXT",
+          "intent_confidence": 1
+        },
+        {
+          "at": "2026-09-17T02:04:17.884099+00:00",
+          "text": "Mael, encontrei outros horários para o seu corte com o Pedro no dia 21/09. O valor é R$ 30. Escolha uma opção abaixo 👇",
+          "intent": null,
+          "direction": "OUTBOUND",
+          "message_id": "e4c575aa-d34e-4a0f-a863-b005e17cf35d",
+          "message_type": "TEXT",
+          "intent_confidence": null
+        },
+        {
+          "at": "2026-09-17T02:10:37+00:00",
+          "text": "09:45",
+          "intent": "SELECT_SLOT",
+          "direction": "INBOUND",
+          "message_id": "26b97857-4410-430c-893c-41df091ac35c",
+          "message_type": "INTERACTIVE",
+          "intent_confidence": 1
+        },
+        {
+          "at": "2026-09-17T02:10:47.505585+00:00",
+          "text": "Fechado, Mael! Seu horário com o Pedro ficou confirmado para 21/09, às 9h45.\n\nValor: R$ 30.",
+          "intent": null,
+          "direction": "OUTBOUND",
+          "message_id": "25d8aca0-d2bc-4bb7-9464-76ccb9fb1725",
+          "message_type": "TEXT",
+          "intent_confidence": null
+        },
+        {
+          "at": "2026-09-17T04:07:27+00:00",
+          "text": "Tem outro horário não bb?",
+          "intent": "RESCHEDULE_APPOINTMENT",
+          "direction": "INBOUND",
+          "message_id": "70ad2de3-2ba9-46c0-9136-c18f689dcc30",
+          "message_type": "TEXT",
+          "intent_confidence": 0.94
+        },
+        {
+          "at": "2026-09-17T04:07:41.844694+00:00",
+          "text": "Poxa, Mael 😕 não consegui consultar outro horário agora. O corte das 9h45 continua confirmado por enquanto.",
+          "intent": null,
+          "direction": "OUTBOUND",
+          "message_id": "f8215995-2b0e-4adf-94d7-22081f2e9aeb",
+          "message_type": "TEXT",
+          "intent_confidence": null
+        },
+        {
+          "at": "2026-09-17T17:10:22+00:00",
+          "text": "Quero remarcar meu corte com o Pedro de segunda, dia 21, às 9h45. Tem outro horário não bb?",
+          "intent": null,
+          "direction": "INBOUND",
+          "message_id": "27967db4-dcfa-4f9a-87de-57f738c97f64",
+          "message_type": "TEXT",
+          "intent_confidence": null
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,253 @@
+{
+  "name": "05 - ML CONTROL PLANE - INTERNAL ACTIONS RC1",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ml-internal/control/action",
+        "responseMode": "responseNode",
+        "options": {},
+        "authentication": "headerAuth"
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -600,
+        0
+      ],
+      "id": "85bb5fd3-89e8-46c6-b03f-0e7c1cf03eb0",
+      "name": "00 - INTERNAL CONTROL WEBHOOK",
+      "webhookId": "aaefce9e-be88-4479-a47b-d707fea25122",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "ML Internal API Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const req = $json;\nconst body = req.body ?? {};\nconst envelope = {\n  actor_user_id: body.actor_user_id ?? null,\n  business_id: body.business_id ?? null,\n  role: body.role ?? null,\n  action: body.action ?? null,\n  arguments: body.arguments ?? {},\n  idempotency_key: body.idempotency_key ?? null,\n  request_id: body.request_id ?? null\n};\n\nconst UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;\nconst errors = [];\nif (!envelope.actor_user_id || !UUID.test(String(envelope.actor_user_id))) errors.push('ACTOR_USER_ID_INVALID');\nif (!envelope.business_id || !UUID.test(String(envelope.business_id))) errors.push('BUSINESS_ID_INVALID');\nif (!envelope.action || typeof envelope.action !== 'string') errors.push('ACTION_REQUIRED');\nif (!envelope.idempotency_key || typeof envelope.idempotency_key !== 'string') errors.push('IDEMPOTENCY_KEY_REQUIRED');\n\nreturn { json: { envelope, valid: errors.length === 0, errors } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -340,
+        0
+      ],
+      "id": "d91ece5f-7afe-4e57-8bd5-83574d779650",
+      "name": "01 - VALIDAR ENVELOPE"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.valid === true ? 'VALID' : 'INVALID' }}",
+                    "rightValue": "VALID",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    },
+                    "id": "7ce1550e-3b72-4793-abbe-44c7d3275959"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "VALID"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.valid === true ? 'VALID' : 'INVALID' }}",
+                    "rightValue": "INVALID",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    },
+                    "id": "80c97e10-cc88-47bb-a032-730a863c0979"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "INVALID"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -80,
+        0
+      ],
+      "id": "78178209-29ef-4a1f-9bcd-cc7d73d05bd5",
+      "name": "02 - ROTEAR VALIDADE"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.execute_control_plane_action_v1(\n    $1::UUID,\n    $2::UUID,\n    $3::TEXT,\n    $4::TEXT,\n    $5::JSONB,\n    $6::TEXT,\n    $7::TEXT\n) AS result;",
+        "options": {
+          "queryReplacement": "={{ [\n  $json.envelope.actor_user_id,\n  $json.envelope.business_id,\n  $json.envelope.role,\n  $json.envelope.action,\n  JSON.stringify($json.envelope.arguments ?? {}),\n  $json.envelope.idempotency_key,\n  $execution.id\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        200,
+        -100
+      ],
+      "id": "83a8f5a3-63f4-4f52-8c70-0e4e810d40d8",
+      "name": "03 - EXECUTAR CONTROL PLANE",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, result: $json.result }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        460,
+        -100
+      ],
+      "id": "3c60e81d-5760-431f-a54d-2b8897356d86",
+      "name": "04 - RESPONDER OK"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { response: { ok: false, code: 'INVALID_REQUEST', errors: $json.errors ?? [] } } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        120
+      ],
+      "id": "74c56b63-559a-4583-b6ff-e5b135a54dfd",
+      "name": "03E - PREPARAR INVALID RESPONSE"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.response) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        460,
+        120
+      ],
+      "id": "137bdd07-242f-4d82-8186-2cecddcf6b9a",
+      "name": "04E - RESPONDER INVALID"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "00 - INTERNAL CONTROL WEBHOOK": {
+      "main": [
+        [
+          {
+            "node": "01 - VALIDAR ENVELOPE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "01 - VALIDAR ENVELOPE": {
+      "main": [
+        [
+          {
+            "node": "02 - ROTEAR VALIDADE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 - ROTEAR VALIDADE": {
+      "main": [
+        [
+          {
+            "node": "03 - EXECUTAR CONTROL PLANE",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "03E - PREPARAR INVALID RESPONSE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03 - EXECUTAR CONTROL PLANE": {
+      "main": [
+        [
+          {
+            "node": "04 - RESPONDER OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03E - PREPARAR INVALID RESPONSE": {
+      "main": [
+        [
+          {
+            "node": "04E - RESPONDER INVALID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "11780d80-0be9-4968-91b9-26b00b24d3c1",
+  "tags": []
+}

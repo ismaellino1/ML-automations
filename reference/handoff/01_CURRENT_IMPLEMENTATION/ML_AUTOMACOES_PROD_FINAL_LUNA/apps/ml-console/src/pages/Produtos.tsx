@@ -1,0 +1,1 @@
+import {ResourcePage} from "../components/ResourcePage"; export default function Produtos(){return <ResourcePage title="Produtos" description="Catálogo, preço, estoque, atributos e recomendações suportadas pela IA."/>}

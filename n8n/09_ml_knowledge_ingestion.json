@@ -1,0 +1,104 @@
+{
+  "name": "09 - ML KNOWLEDGE INGESTION PROD FINAL",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ml-internal/knowledge/upsert",
+        "responseMode": "responseNode",
+        "options": {},
+        "authentication": "headerAuth"
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -600,
+        0
+      ],
+      "id": "d778fbb2-24da-5a0b-847b-09b73d0806f1",
+      "name": "00 - KNOWLEDGE WEBHOOK",
+      "webhookId": "40e868c1-d6b8-595a-9a1f-825c485d5f40",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "ML Internal API Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.upsert_knowledge_document_v1($1::UUID,$2::TEXT,$3::TEXT,$4::TEXT,$5::JSONB,$6::TEXT) AS result;",
+        "options": {
+          "queryReplacement": "={{ [$json.body.business_id,$json.body.external_key,$json.body.title,$json.body.content,JSON.stringify($json.body.metadata ?? {}),$execution.id] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -300,
+        0
+      ],
+      "id": "14b75953-6d2c-5c5a-8e8b-336e0fdb7db4",
+      "name": "01 - UPSERT KNOWLEDGE",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.result) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "7fb71b18-a689-5935-9907-160f850faf0b",
+      "name": "02 - RESPONDER"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "00 - KNOWLEDGE WEBHOOK": {
+      "main": [
+        [
+          {
+            "node": "01 - UPSERT KNOWLEDGE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "01 - UPSERT KNOWLEDGE": {
+      "main": [
+        [
+          {
+            "node": "02 - RESPONDER",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "c3f16105-735f-54a2-909c-298a0efec1f8",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

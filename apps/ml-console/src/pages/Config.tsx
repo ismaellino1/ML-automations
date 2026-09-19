@@ -1,0 +1,1 @@
+import {ResourcePage} from "../components/ResourcePage"; export default function Config(){return <ResourcePage title="Config" description="Marca, canais, Meta, Calendar, IA, políticas e feature flags."/>}

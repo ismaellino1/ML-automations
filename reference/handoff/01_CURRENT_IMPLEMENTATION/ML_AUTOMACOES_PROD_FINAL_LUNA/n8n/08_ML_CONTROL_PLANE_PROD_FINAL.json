@@ -1,0 +1,129 @@
+{
+  "name": "08 - ML CONTROL PLANE PROD FINAL",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ml-internal/control/action",
+        "responseMode": "responseNode",
+        "options": {},
+        "authentication": "headerAuth"
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -600,
+        0
+      ],
+      "id": "69806c2d-472b-5909-acdb-1f9b11c33f43",
+      "name": "00 - INTERNAL CONTROL WEBHOOK",
+      "webhookId": "a9327170-fcb8-549e-908c-59e3067d0128",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "ML Internal API Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const b=$json.body??{};return {json:{req:{actor_user_id:b.actor_user_id??null,business_id:b.business_id??null,action:b.action??null,arguments:b.arguments??{},idempotency_key:b.idempotency_key??null,source:b.source??'INTERNAL'}}};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -340,
+        0
+      ],
+      "id": "c88c6bb2-c9c8-56e6-bbb1-f8c89c84f829",
+      "name": "01 - NORMALIZAR CONTROL REQUEST"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.execute_control_plane_action_v2($1::UUID,$2::UUID,$3::TEXT,$4::JSONB,$5::TEXT,$6::TEXT) AS result;",
+        "options": {
+          "queryReplacement": "={{ [$json.req.actor_user_id,$json.req.business_id,$json.req.action,JSON.stringify($json.req.arguments),$json.req.idempotency_key,$execution.id] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -80,
+        0
+      ],
+      "id": "d2ef1b6e-da48-577b-be6e-e79a3652a09c",
+      "name": "02 - EXECUTAR CONTROL PLANE",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.result) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        200,
+        0
+      ],
+      "id": "b3b26945-8334-58bc-a670-00d51ae49ec9",
+      "name": "03 - RESPONDER"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "00 - INTERNAL CONTROL WEBHOOK": {
+      "main": [
+        [
+          {
+            "node": "01 - NORMALIZAR CONTROL REQUEST",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "01 - NORMALIZAR CONTROL REQUEST": {
+      "main": [
+        [
+          {
+            "node": "02 - EXECUTAR CONTROL PLANE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 - EXECUTAR CONTROL PLANE": {
+      "main": [
+        [
+          {
+            "node": "03 - RESPONDER",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2256a4b1-3021-5703-836e-94352f4c69b2",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

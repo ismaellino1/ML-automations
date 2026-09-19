@@ -1,0 +1,85 @@
+{
+  "name": "99 - ML OBSERVABILITY PROD FINAL",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -500,
+        0
+      ],
+      "id": "cd65b12e-c634-4b95-b810-e919b8805d53",
+      "name": "00 - ERROR TRIGGER"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const e = $json ?? {};\nconst incident = {\n  source: 'N8N',\n  workflow_id: e.workflow?.id ?? null,\n  workflow_name: e.workflow?.name ?? null,\n  execution_id: e.execution?.id ?? null,\n  execution_url: e.execution?.url ?? null,\n  retry_of: e.execution?.retryOf ?? null,\n  last_node_executed: e.execution?.lastNodeExecuted ?? null,\n  error_message: e.execution?.error?.message ?? e.error?.message ?? null,\n  error_stack: e.execution?.error?.stack ?? e.error?.stack ?? null,\n  mode: e.execution?.mode ?? null,\n  occurred_at: new Date().toISOString(),\n  raw: e\n};\nreturn { json: { incident } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        0
+      ],
+      "id": "5629f4ec-6764-4242-b7f5-51c8d779ceb6",
+      "name": "01 - NORMALIZAR INCIDENTE"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.record_automation_incident_v1(\n    $1::JSONB\n) AS result;",
+        "options": {
+          "queryReplacement": "={{ [JSON.stringify($json.incident)] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        20,
+        0
+      ],
+      "id": "2c8e2ad1-03a5-4237-a5d4-d0f9cab2690f",
+      "name": "02 - REGISTRAR INCIDENTE",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "00 - ERROR TRIGGER": {
+      "main": [
+        [
+          {
+            "node": "01 - NORMALIZAR INCIDENTE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "01 - NORMALIZAR INCIDENTE": {
+      "main": [
+        [
+          {
+            "node": "02 - REGISTRAR INCIDENTE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d50a940f-6828-49fd-83bc-2da7a1d47580",
+  "tags": []
+}

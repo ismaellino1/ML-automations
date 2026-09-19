@@ -1,0 +1,140 @@
+{
+  "name": "06 - ML CAMPAIGN ENGINE PROD FINAL",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 15
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -600,
+        0
+      ],
+      "id": "e9752b37-a6ca-5233-9469-1cdc5e128d96",
+      "name": "00 - POLL CAMPAIGNS"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.enqueue_due_campaign_jobs($1::INTEGER,$2::TEXT) AS result;",
+        "options": {
+          "queryReplacement": "={{ [500,$execution.id] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -360,
+        0
+      ],
+      "id": "88551063-5f75-5df3-85c7-bdf75250ac2d",
+      "name": "01 - ENQUEUE DUE CAMPAIGNS",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.materialize_due_campaign_recipients($1::INTEGER,$2::TEXT) AS result;",
+        "options": {
+          "queryReplacement": "={{ [500,$execution.id] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -120,
+        0
+      ],
+      "id": "d2201430-a1a4-5f7f-800f-53d8432aeda8",
+      "name": "02 - MATERIALIZE RECIPIENTS",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.enqueue_campaign_deliveries($1::INTEGER,$2::TEXT) AS result;",
+        "options": {
+          "queryReplacement": "={{ [500,$execution.id] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        120,
+        0
+      ],
+      "id": "3cd21274-8219-5c50-8b7c-79c96b31c059",
+      "name": "03 - ENQUEUE DELIVERIES",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "00 - POLL CAMPAIGNS": {
+      "main": [
+        [
+          {
+            "node": "01 - ENQUEUE DUE CAMPAIGNS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "01 - ENQUEUE DUE CAMPAIGNS": {
+      "main": [
+        [
+          {
+            "node": "02 - MATERIALIZE RECIPIENTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 - MATERIALIZE RECIPIENTS": {
+      "main": [
+        [
+          {
+            "node": "03 - ENQUEUE DELIVERIES",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "1a6fd2dd-4ad1-50f8-ada2-3d2e0ed243e2",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

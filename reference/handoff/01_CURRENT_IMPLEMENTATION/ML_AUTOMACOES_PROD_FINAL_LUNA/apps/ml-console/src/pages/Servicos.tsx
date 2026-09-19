@@ -1,0 +1,1 @@
+import {ResourcePage} from "../components/ResourcePage"; export default function Servicos(){return <ResourcePage title="Servicos" description="Serviços, preço, duração, profissionais habilitados e regras."/>}

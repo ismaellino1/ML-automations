@@ -1,0 +1,683 @@
+{
+  "name": "05 - ML GOOGLE CALENDAR PROD FINAL",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -700,
+        0
+      ],
+      "id": "851027d3-9146-4415-8a36-e56b3df9b652",
+      "name": "00 - POLL CALENDAR JOBS"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT *\nFROM core.claim_calendar_sync_batch(\n    $1::INTEGER,\n    $2::TEXT\n);",
+        "options": {
+          "queryReplacement": "={{ [10, $execution.id] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -460,
+        0
+      ],
+      "id": "49a3420c-133a-492d-8a70-7710b9790a2d",
+      "name": "01 - CLAIM CALENDAR BATCH",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const job = $json.job ?? $json;\nconst errors = [];\nif (!job.job_id) errors.push('JOB_ID_MISSING');\nif (!job.operation) errors.push('OPERATION_MISSING');\nif (!job.external_calendar_id) errors.push('CALENDAR_ID_MISSING');\nif (!job.appointment_id) errors.push('APPOINTMENT_ID_MISSING');\nif (errors.length) throw new Error(`INVALID_CALENDAR_JOB:${errors.join(',')}`);\nreturn { json: { job } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        0
+      ],
+      "id": "414d32e1-a0ce-42d7-a18b-96cd165b6040",
+      "name": "02 - VALIDAR JOB CALENDAR"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.job.operation }}",
+                    "rightValue": "CREATE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    },
+                    "id": "cd335af1-5a42-4896-8763-fde3a3c9e43e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "CREATE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.job.operation }}",
+                    "rightValue": "DELETE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    },
+                    "id": "af1204cd-6084-42a4-96ca-1aa4597c5f1d"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "DELETE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        20,
+        0
+      ],
+      "id": "33593633-4573-4e72-b9cf-21cd1657b0ce",
+      "name": "03 - ROTEAR OPERACAO CALENDAR"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $('02 - VALIDAR JOB CALENDAR').item.json.job.external_calendar_id }}",
+          "mode": "id"
+        },
+        "limit": 10,
+        "timeMin": "={{ DateTime.fromISO($('02 - VALIDAR JOB CALENDAR').item.json.job.start_at).minus({ days: 1 }).toISO() }}",
+        "timeMax": "={{ DateTime.fromISO($('02 - VALIDAR JOB CALENDAR').item.json.job.end_at).plus({ days: 1 }).toISO() }}",
+        "options": {
+          "query": "={{ $('02 - VALIDAR JOB CALENDAR').item.json.job.appointment_id }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        280,
+        -180
+      ],
+      "id": "8ab3adcf-65b3-478d-83fd-a386ed2ab6d3",
+      "name": "04C - RECONCILIAR CREATE",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const items = $input.all();\nconst job = $('02 - VALIDAR JOB CALENDAR').item.json.job;\nconst markerA = `ML Appointment: ${job.appointment_id}`;\nconst markerB = `Appointment ID: ${job.appointment_id}`;\n\nconst found = items\n  .map(i => i.json ?? {})\n  .find(e => {\n    const d = String(e.description ?? '');\n    const status = String(e.status ?? '').toLowerCase();\n    return e.id && status !== 'cancelled' && (d.includes(markerA) || d.includes(markerB));\n  });\n\nreturn [{\n  json: {\n    job,\n    route: found ? 'FOUND' : 'CREATE',\n    existing_event_id: found?.id ?? null,\n    existing_event: found ?? null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        -180
+      ],
+      "id": "a2c443f7-217a-49c0-840e-52ff7b52f6de",
+      "name": "05C - RESOLVER RECONCILIACAO"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "FOUND",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    },
+                    "id": "f9af7cfe-3821-4cae-8b81-a344c122cf5f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "FOUND"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "CREATE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    },
+                    "id": "963850ad-7b4f-46c0-a419-a67f1b09f35d"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "CREATE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        -180
+      ],
+      "id": "a15f7a69-1940-4bc1-ac20-03d71ce711fb",
+      "name": "06C - ROTEAR RECONCILIACAO"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.complete_calendar_sync_job(\n    $1::UUID,\n    $2::TEXT,\n    $3::JSONB\n) AS completion;",
+        "options": {
+          "queryReplacement": "={{ [\n  $('05C - RESOLVER RECONCILIACAO').item.json.job.job_id,\n  $json.existing_event_id,\n  JSON.stringify({ reconciled: true, event: $json.existing_event })\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1060,
+        -300
+      ],
+      "id": "ec658c6d-b6e1-4cb5-b9f9-eb9a6a278280",
+      "name": "07C - COMPLETE RECONCILED",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $('02 - VALIDAR JOB CALENDAR').item.json.job.external_calendar_id }}",
+          "mode": "id"
+        },
+        "start": "={{ $('02 - VALIDAR JOB CALENDAR').item.json.job.start_at }}",
+        "end": "={{ $('02 - VALIDAR JOB CALENDAR').item.json.job.end_at }}",
+        "additionalFields": {
+          "summary": "={{ $('02 - VALIDAR JOB CALENDAR').item.json.job.summary }}",
+          "description": "={{ $('02 - VALIDAR JOB CALENDAR').item.json.job.description }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        1060,
+        -100
+      ],
+      "id": "9bcf7a5b-894c-416f-b3d3-b15d23a74b9f",
+      "name": "07C2 - GOOGLE CREATE EVENT",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Google Calendar account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.complete_calendar_sync_job(\n    $1::UUID,\n    $2::TEXT,\n    $3::JSONB\n) AS completion;",
+        "options": {
+          "queryReplacement": "={{ [\n  $('02 - VALIDAR JOB CALENDAR').item.json.job.job_id,\n  $json.id,\n  JSON.stringify($json)\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1320,
+        -160
+      ],
+      "id": "6358540f-c1d8-4248-aaf5-71f68176185d",
+      "name": "08C - COMPLETE CREATE",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.fail_calendar_sync_job(\n    $1::UUID,\n    $2::TEXT,\n    $3::JSONB\n) AS failure;",
+        "options": {
+          "queryReplacement": "={{ [\n  $('02 - VALIDAR JOB CALENDAR').item.json.job.job_id,\n  $json.error?.message ?? $json.message ?? $json.description ?? 'GOOGLE_CALENDAR_CREATE_FAILED',\n  JSON.stringify($json)\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1320,
+        20
+      ],
+      "id": "eff63173-a277-466c-8efd-a3320bdbbd34",
+      "name": "09C - FAIL CREATE",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $('02 - VALIDAR JOB CALENDAR').item.json.job.external_calendar_id }}",
+          "mode": "id"
+        },
+        "eventId": "={{ $('02 - VALIDAR JOB CALENDAR').item.json.job.external_event_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        280,
+        160
+      ],
+      "id": "cb119d64-5ff3-4f57-8846-fddf1bcc4c46",
+      "name": "04D - GOOGLE DELETE EVENT",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Google Calendar account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.complete_calendar_sync_job(\n    $1::UUID,\n    $2::TEXT,\n    $3::JSONB\n) AS completion;",
+        "options": {
+          "queryReplacement": "={{ [\n  $('02 - VALIDAR JOB CALENDAR').item.json.job.job_id,\n  $('02 - VALIDAR JOB CALENDAR').item.json.job.external_event_id,\n  JSON.stringify({ deleted: true, response: $json })\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        540,
+        100
+      ],
+      "id": "3abc6a9d-2980-4c62-919d-24b4adfffd32",
+      "name": "05D - COMPLETE DELETE",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const job = $('02 - VALIDAR JOB CALENDAR').item.json.job;\nconst raw = $json ?? {};\nconst status = Number(\n  raw.statusCode ?? raw.httpCode ?? raw.error?.statusCode ??\n  raw.error?.httpCode ?? raw.error?.cause?.statusCode ?? 0\n);\nconst msg = String(raw.error?.message ?? raw.message ?? raw.description ?? '');\nconst absent = status === 404 || status === 410 || /not found|gone/i.test(msg);\nreturn { json: { job, route: absent ? 'ALREADY_GONE' : 'ERROR', raw } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        260
+      ],
+      "id": "cc69356b-da15-4895-af12-c5df12c1561a",
+      "name": "05DE - CLASSIFICAR DELETE ERROR"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "ALREADY_GONE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    },
+                    "id": "5297d7be-df0d-4c57-bbe5-4c45f64d0ece"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ALREADY_GONE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "ERROR",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    },
+                    "id": "f7cf61b9-223f-4620-8255-43a3afc00c7d"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ERROR"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        260
+      ],
+      "id": "3b8d4ff6-637f-480c-95e1-43e02619bb20",
+      "name": "06D - ROTEAR DELETE ERROR"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.complete_calendar_sync_job(\n    $1::UUID,\n    $2::TEXT,\n    $3::JSONB\n) AS completion;",
+        "options": {
+          "queryReplacement": "={{ [\n  $json.job.job_id,\n  $json.job.external_event_id,\n  JSON.stringify({ already_absent: true, response: $json.raw })\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1060,
+        180
+      ],
+      "id": "2dfe1603-30a3-411e-9fd9-f5a716fffe98",
+      "name": "07D - COMPLETE ALREADY GONE",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.fail_calendar_sync_job(\n    $1::UUID,\n    $2::TEXT,\n    $3::JSONB\n) AS failure;",
+        "options": {
+          "queryReplacement": "={{ [\n  $json.job.job_id,\n  $json.raw?.error?.message ?? $json.raw?.message ?? 'GOOGLE_CALENDAR_DELETE_FAILED',\n  JSON.stringify($json.raw)\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1060,
+        340
+      ],
+      "id": "baab8eb0-31f4-40ad-93ae-8a348e762264",
+      "name": "08D - FAIL DELETE",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "00 - POLL CALENDAR JOBS": {
+      "main": [
+        [
+          {
+            "node": "01 - CLAIM CALENDAR BATCH",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "01 - CLAIM CALENDAR BATCH": {
+      "main": [
+        [
+          {
+            "node": "02 - VALIDAR JOB CALENDAR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 - VALIDAR JOB CALENDAR": {
+      "main": [
+        [
+          {
+            "node": "03 - ROTEAR OPERACAO CALENDAR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03 - ROTEAR OPERACAO CALENDAR": {
+      "main": [
+        [
+          {
+            "node": "04C - RECONCILIAR CREATE",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "04D - GOOGLE DELETE EVENT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04C - RECONCILIAR CREATE": {
+      "main": [
+        [
+          {
+            "node": "05C - RESOLVER RECONCILIACAO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05C - RESOLVER RECONCILIACAO": {
+      "main": [
+        [
+          {
+            "node": "06C - ROTEAR RECONCILIACAO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "06C - ROTEAR RECONCILIACAO": {
+      "main": [
+        [
+          {
+            "node": "07C - COMPLETE RECONCILED",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "07C2 - GOOGLE CREATE EVENT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "07C2 - GOOGLE CREATE EVENT": {
+      "main": [
+        [
+          {
+            "node": "08C - COMPLETE CREATE",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "09C - FAIL CREATE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04D - GOOGLE DELETE EVENT": {
+      "main": [
+        [
+          {
+            "node": "05D - COMPLETE DELETE",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "05DE - CLASSIFICAR DELETE ERROR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05DE - CLASSIFICAR DELETE ERROR": {
+      "main": [
+        [
+          {
+            "node": "06D - ROTEAR DELETE ERROR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "06D - ROTEAR DELETE ERROR": {
+      "main": [
+        [
+          {
+            "node": "07D - COMPLETE ALREADY GONE",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "08D - FAIL DELETE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "307ec0e0-bd53-4166-b18a-748bac3f9ddf",
+  "tags": []
+}

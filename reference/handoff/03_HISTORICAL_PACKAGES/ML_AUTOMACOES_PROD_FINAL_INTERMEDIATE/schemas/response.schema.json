@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "text": {
+      "type": "string"
+    },
+    "response_type": {
+      "type": "string",
+      "enum": [
+        "SLOT_OPTIONS",
+        "CONFIRMATION",
+        "INFORMATION",
+        "QUESTION",
+        "ERROR",
+        "HANDOFF",
+        "GENERAL"
+      ]
+    },
+    "should_send": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "text",
+    "response_type",
+    "should_send"
+  ]
+}

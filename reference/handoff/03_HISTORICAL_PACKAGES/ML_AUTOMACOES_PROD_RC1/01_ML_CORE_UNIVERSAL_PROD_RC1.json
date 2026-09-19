@@ -1,0 +1,916 @@
+{
+  "name": "01 - ML CORE - UNIVERSAL PROD RC1",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        0
+      ],
+      "id": "9b4cbf00-e298-4ae5-a467-466a4cd65371",
+      "name": "00 - WHATSAPP TRIGGER",
+      "webhookId": "434f2041-d883-4038-b93a-6025c2603457",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "4KiEzu4EUZgh4xNV",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = $json;\n\nconst message =\n  Array.isArray(raw.messages)\n    ? raw.messages[0]\n    : null;\n\nconst contact =\n  Array.isArray(raw.contacts)\n    ? raw.contacts[0]\n    : null;\n\n\n// ======================================================\n// VALIDAR EVENTO\n// ======================================================\n\nif (!message) {\n  return {\n    json: {\n      event_type: 'UNSUPPORTED_EVENT',\n      raw_payload: raw\n    }\n  };\n}\n\n\n// ======================================================\n// TIMESTAMP\n// ======================================================\n\nlet providerTimestamp = null;\n\nif (message.timestamp) {\n\n  const unix =\n    Number(message.timestamp);\n\n  if (\n    Number.isFinite(unix)\n    && unix > 0\n  ) {\n    providerTimestamp =\n      new Date(unix * 1000).toISOString();\n  }\n}\n\nproviderTimestamp =\n  providerTimestamp\n  ?? new Date().toISOString();\n\n\n// ======================================================\n// IDENTIDADE DO CLIENTE\n// ======================================================\n\nconst externalUserId =\n  contact?.wa_id\n  ?? message.from\n  ?? null;\n\nconst profileName =\n  contact?.profile?.name\n  ?? null;\n\n\n// ======================================================\n// CONTEÚDO\n// ======================================================\n\nconst originalType =\n  String(\n    message.type\n    ?? 'unknown'\n  ).toLowerCase();\n\nlet text = null;\n\nlet interaction = null;\n\nlet media = {\n  id: null,\n  mime_type: null,\n  url: null,\n  caption: null,\n  filename: null\n};\n\n\n// ======================================================\n// TEXTO\n// ======================================================\n\nif (originalType === 'text') {\n\n  text =\n    message.text?.body\n    ?? null;\n}\n\n\n// ======================================================\n// INTERACTIVE\n// ======================================================\n\nif (originalType === 'interactive') {\n\n  const interactiveType =\n    message.interactive?.type\n    ?? null;\n\n\n  // ----------------------------------------------------\n  // LIST REPLY\n  // ----------------------------------------------------\n\n  if (interactiveType === 'list_reply') {\n\n    const reply =\n      message.interactive?.list_reply\n      ?? {};\n\n    const replyId =\n      reply.id\n      ?? null;\n\n    let slotOfferId = null;\n    let optionNumber = null;\n\n\n    if (\n      typeof replyId === 'string'\n      && replyId.startsWith('slot|')\n    ) {\n\n      const parts =\n        replyId.split('|');\n\n      if (\n        parts.length === 3\n        && parts[0] === 'slot'\n      ) {\n\n        slotOfferId =\n          parts[1]\n          ?? null;\n\n        const parsedOption =\n          Number(parts[2]);\n\n        if (\n          Number.isInteger(parsedOption)\n          && parsedOption >= 1\n        ) {\n          optionNumber =\n            parsedOption;\n        }\n      }\n    }\n\n\n    interaction = {\n\n      kind:\n        'LIST_REPLY',\n\n      action:\n        slotOfferId && optionNumber\n          ? 'SELECT_SLOT'\n          : null,\n\n      reply_id:\n        replyId,\n\n      title:\n        reply.title\n        ?? null,\n\n      description:\n        reply.description\n        ?? null,\n\n      slot_offer_id:\n        slotOfferId,\n\n      option_number:\n        optionNumber\n    };\n\n\n    // Texto humano também fica disponível para histórico/IA.\n    text =\n      reply.title\n      ?? null;\n  }\n\n\n  // ----------------------------------------------------\n  // BUTTON REPLY\n  // ----------------------------------------------------\n\n  else if (interactiveType === 'button_reply') {\n\n    const reply =\n      message.interactive?.button_reply\n      ?? {};\n\n    const replyId =\n      reply.id\n      ?? null;\n\n    let slotOfferId = null;\n    let optionNumber = null;\n\n\n    if (\n      typeof replyId === 'string'\n      && replyId.startsWith('slot|')\n    ) {\n\n      const parts =\n        replyId.split('|');\n\n      if (\n        parts.length === 3\n        && parts[0] === 'slot'\n      ) {\n\n        slotOfferId =\n          parts[1]\n          ?? null;\n\n        const parsedOption =\n          Number(parts[2]);\n\n        if (\n          Number.isInteger(parsedOption)\n          && parsedOption >= 1\n        ) {\n          optionNumber =\n            parsedOption;\n        }\n      }\n    }\n\n\n    interaction = {\n\n      kind:\n        'BUTTON_REPLY',\n\n      action:\n        slotOfferId && optionNumber\n          ? 'SELECT_SLOT'\n          : null,\n\n      reply_id:\n        replyId,\n\n      title:\n        reply.title\n        ?? null,\n\n      slot_offer_id:\n        slotOfferId,\n\n      option_number:\n        optionNumber\n    };\n\n\n    text =\n      reply.title\n      ?? null;\n  }\n}\n\n\n// ======================================================\n// ÁUDIO\n// ======================================================\n\nif (originalType === 'audio') {\n\n  media = {\n    ...media,\n\n    id:\n      message.audio?.id\n      ?? null,\n\n    mime_type:\n      message.audio?.mime_type\n      ?? null\n  };\n}\n\n\n// ======================================================\n// IMAGEM\n// ======================================================\n\nif (originalType === 'image') {\n\n  media = {\n    ...media,\n\n    id:\n      message.image?.id\n      ?? null,\n\n    mime_type:\n      message.image?.mime_type\n      ?? null,\n\n    caption:\n      message.image?.caption\n      ?? null\n  };\n\n  text =\n    message.image?.caption\n    ?? null;\n}\n\n\n// ======================================================\n// DOCUMENTO\n// ======================================================\n\nif (originalType === 'document') {\n\n  media = {\n    ...media,\n\n    id:\n      message.document?.id\n      ?? null,\n\n    mime_type:\n      message.document?.mime_type\n      ?? null,\n\n    caption:\n      message.document?.caption\n      ?? null,\n\n    filename:\n      message.document?.filename\n      ?? null\n  };\n\n  text =\n    message.document?.caption\n    ?? null;\n}\n\n\n// ======================================================\n// VÍDEO\n// ======================================================\n\nif (originalType === 'video') {\n\n  media = {\n    ...media,\n\n    id:\n      message.video?.id\n      ?? null,\n\n    mime_type:\n      message.video?.mime_type\n      ?? null,\n\n    caption:\n      message.video?.caption\n      ?? null\n  };\n\n  text =\n    message.video?.caption\n    ?? null;\n}\n\n\n// ======================================================\n// OUTPUT CANÔNICO\n// ======================================================\n\nreturn {\n  json: {\n\n    event_type:\n      'INBOUND_MESSAGE',\n\n    dev:\n      false,\n\n    /*\n     * TEMPORÁRIO DURANTE O TESTE DA BARBEARIA.\n     *\n     * Depois vamos resolver a empresa pelo phone_number_id\n     * cadastrado em business_channels, sem hardcode.\n     */\n    business_code:\n      'BARB001',\n\n    channel: {\n\n      type:\n        'WHATSAPP',\n\n      provider:\n        'META',\n\n      external_channel_id:\n        raw.metadata?.phone_number_id\n        ?? null\n    },\n\n    customer: {\n\n      external_user_id:\n        externalUserId,\n\n      profile_name:\n        profileName\n    },\n\n    message: {\n\n      external_message_id:\n        message.id\n        ?? null,\n\n      idempotency_key:\n        message.id\n          ? `IN:META:${message.id}`\n          : null,\n\n      type:\n        originalType,\n\n      text,\n\n      interaction,\n\n      media,\n\n      reply_to_external_message_id:\n        message.context?.id\n        ?? null,\n\n      provider_timestamp:\n        providerTimestamp,\n\n      raw_payload:\n        raw\n    },\n\n    received_at:\n      new Date().toISOString()\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        0
+      ],
+      "id": "90039bb0-4fe3-44ae-99ad-f55e9363b8e0",
+      "name": "00B - NORMALIZAR WEBHOOK META"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const input = $json;\n\nconst messageType =\n  String(\n    input.message?.type\n    ?? 'text'\n  ).toLowerCase();\n\nconst text =\n  input.message?.text\n  ?? null;\n\nreturn {\n  json: {\n\n    runtime: {\n      mode:\n        input.dev === true\n          ? 'DEV'\n          : 'PRODUCTION',\n\n      received_at:\n        input.received_at\n        ?? new Date().toISOString()\n    },\n\n    business_ref: {\n      code:\n        input.business_code\n        ?? null\n    },\n\n    channel: {\n      type:\n        input.channel?.type\n        ?? 'WHATSAPP',\n\n      provider:\n        input.channel?.provider\n        ?? 'META',\n\n      external_channel_id:\n        input.channel?.external_channel_id\n        ?? null\n    },\n\n    customer_ref: {\n      external_user_id:\n        input.customer?.external_user_id\n        ?? null,\n\n      profile_name:\n        input.customer?.profile_name\n        ?? null\n    },\n\n    message: {\n\n      external_message_id:\n        input.message?.external_message_id\n        ?? null,\n\n      idempotency_key:\n        input.message?.idempotency_key\n        ?? null,\n\n      reply_to_external_message_id:\n        input.message?.reply_to_external_message_id\n        ?? null,\n\n      type:\n        messageType,\n\n      text,\n\n      normalized_text:\n        typeof text === 'string'\n          ? text.trim()\n          : null,\n\n      interaction:\n        input.message?.interaction\n        ?? null,\n\n      provider_timestamp:\n        input.message?.provider_timestamp\n        ?? input.received_at\n        ?? null,\n\n      raw_payload:\n        input.message?.raw_payload\n        ?? {},\n\n      media: {\n        id:\n          input.message?.media?.id\n          ?? null,\n\n        mime_type:\n          input.message?.media?.mime_type\n          ?? null,\n\n        url:\n          input.message?.media?.url\n          ?? null,\n\n        caption:\n          input.message?.media?.caption\n          ?? null,\n\n        filename:\n          input.message?.media?.filename\n          ?? null\n      }\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        0
+      ],
+      "id": "0a651143-c2c1-4ab2-944b-f3d427cf639b",
+      "name": "01 - NORMALIZAR ENTRADA"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.prepare_assistant_turn(\n    $1::TEXT,\n    $2::TEXT,\n    $3::TEXT,\n    $4::TEXT,\n    $5::TEXT,\n    $6::TEXT,\n    $7::TEXT,\n    $8::TEXT,\n    $9::JSONB,\n    $10::TIMESTAMPTZ,\n    $11::INTEGER\n) AS context;",
+        "options": {
+          "queryReplacement": "={{ [\n  $('01 - NORMALIZAR ENTRADA').item.json.business_ref.code,\n\n  $('01 - NORMALIZAR ENTRADA').item.json.channel.type,\n\n  $('01 - NORMALIZAR ENTRADA').item.json.channel.provider,\n\n  $('01 - NORMALIZAR ENTRADA').item.json.customer_ref.external_user_id,\n\n  $('01 - NORMALIZAR ENTRADA').item.json.message.idempotency_key,\n\n  $('01 - NORMALIZAR ENTRADA').item.json.message.external_message_id,\n\n  $('01 - NORMALIZAR ENTRADA').item.json.message.type,\n\n  $('01 - NORMALIZAR ENTRADA').item.json.message.normalized_text,\n\n  JSON.stringify(\n    $('01 - NORMALIZAR ENTRADA').item.json.message.raw_payload ?? {}\n  ),\n\n  $('01 - NORMALIZAR ENTRADA').item.json.message.provider_timestamp,\n\n  12\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -80,
+        0
+      ],
+      "id": "9b1525b2-5292-4b94-a49b-6cb35d5906ce",
+      "name": "02 - CARREGAR CONTEXTO CORE",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{    $json.context?.ok !== true     ? 'ERROR'     : $json.context?.turn?.should_process === true       ? 'PROCESS'       : 'DUPLICATE' }}",
+                    "rightValue": "PROCESS",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0ad5343f-f274-4d28-bfdd-0d747fd2feb8"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "PROCESS"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "2a209d1f-32c7-49f3-8ab5-f0b6cbffa137",
+                    "leftValue": "={{    $json.context?.ok !== true     ? 'ERROR'     : $json.context?.turn?.should_process === true       ? 'PROCESS'       : 'DUPLICATE' }}",
+                    "rightValue": "DUPLICATE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "DUPLICATE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "f5a06f30-ea8c-4547-8881-1ccddc2b834a",
+                    "leftValue": "={{    $json.context?.ok !== true     ? 'ERROR'     : $json.context?.turn?.should_process === true       ? 'PROCESS'       : 'DUPLICATE' }}",
+                    "rightValue": "ERROR",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ERROR"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        160,
+        0
+      ],
+      "id": "74731491-7d07-40ed-b078-b095c4e6d2a3",
+      "name": "02A - CONTROLAR TURNO"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const c = $json.context ?? {};\nthrow new Error(`PREPARE_ASSISTANT_TURN_FAILED:${c.code ?? 'UNKNOWN'}`);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        220
+      ],
+      "id": "5229908b-1b57-4362-a9ad-9fd8740ee0c0",
+      "name": "02E - FALHA PREPARE TURN"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{\n  (\n    $('01 - NORMALIZAR ENTRADA').first().json.message?.interaction?.action === 'SELECT_SLOT'\n    ||\n    $('01 - NORMALIZAR ENTRADA').first().json.message?.interaction?.reply_id?.startsWith('rebook|')\n  )\n    ? 'STRUCTURED_ACTION'\n    : 'AI'\n}}",
+                    "rightValue": "STRUCTURED_ACTION",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "c0e0474a-3369-414c-be89-2dd0013bbf0a"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "STRUCTURED_ACTION"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "79b9f822-0abc-4cde-b68a-4f4da025ee74",
+                    "leftValue": "={{\n  (\n    $('01 - NORMALIZAR ENTRADA').first().json.message?.interaction?.action === 'SELECT_SLOT'\n    ||\n    $('01 - NORMALIZAR ENTRADA').first().json.message?.interaction?.reply_id?.startsWith('rebook|')\n  )\n    ? 'STRUCTURED_ACTION'\n    : 'AI'\n}}",
+                    "rightValue": "AI",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "AI"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        400,
+        -40
+      ],
+      "id": "074d4046-76ae-4012-b70c-19d0fdd27cee",
+      "name": "02B - ROTEAR TIPO DE ENTRADA"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const input =\n  $('01 - NORMALIZAR ENTRADA').first().json;\n\nconst context =\n  $('02 - CARREGAR CONTEXTO CORE').first().json.context ?? {};\n\nconst interaction =\n  input.message?.interaction ?? null;\n\n\n// ======================================================\n// HELPERS\n// ======================================================\n\nconst emptyArguments = () => ({\n  service_id: null,\n  professional_id: null,\n  date: null,\n  period: null,\n  time: null,\n  time_from: null,\n  time_until: null,\n  option_number: null,\n  appointment_id: null,\n  allow_professional_fallback: false\n});\n\n\nconst UUID_REGEX =\n  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;\n\n\n// ======================================================\n// HELPER - REBOOK A PARTIR DO CONTEXTO\n// ======================================================\n//\n// Usado quando uma lista de horários expirou durante\n// um fluxo de reagendamento iniciado por cancelamento.\n//\n// NÃO confiamos em serviço, profissional ou horário\n// armazenados no contexto.\n//\n// A única referência operacional é appointment_id.\n//\n// O CORE continuará responsável por validar:\n// - empresa\n// - cliente\n// - ownership\n// - status CANCELLED\n// - ator do cancelamento\n// - profissional\n// - serviços\n// - disponibilidade\n// ======================================================\n\nconst buildRebookFromContext = () => {\n\n  const rebooking =\n    context.conversation?.context?.rebooking\n    ?? null;\n\n  const appointmentId =\n    rebooking?.source_appointment_id\n    ?? null;\n\n\n  if (\n    !appointmentId\n    || typeof appointmentId !== 'string'\n    || !UUID_REGEX.test(appointmentId)\n  ) {\n    return null;\n  }\n\n\n  return {\n    json: {\n      structured_command: {\n\n        kind:\n          'BUSINESS_ACTION',\n\n        intent:\n          'REBOOK_APPOINTMENT',\n\n        action:\n          'REBOOK_APPOINTMENT',\n\n        arguments: {\n          ...emptyArguments(),\n\n          appointment_id:\n            appointmentId\n        },\n\n        missing_information:\n          [],\n\n        customer_meaning:\n          'A lista anterior de horários expirou durante o reagendamento. O cliente continua querendo outro horário para o agendamento cancelado.',\n\n        direct_response:\n          null,\n\n        confidence:\n          1\n      }\n    }\n  };\n};\n\n\n// ======================================================\n// VALIDAR EXISTÊNCIA DA INTERAÇÃO\n// ======================================================\n\nif (!interaction) {\n  return {\n    json: {\n      structured_command: {\n\n        kind:\n          'NEED_INFORMATION',\n\n        intent:\n          'OTHER',\n\n        action:\n          'NONE',\n\n        arguments:\n          emptyArguments(),\n\n        missing_information: [\n          'CLARIFICATION'\n        ],\n\n        customer_meaning:\n          'Interação estruturada não reconhecida.',\n\n        direct_response:\n          'Não consegui identificar essa opção. Pode tentar novamente?',\n\n        confidence:\n          1\n      }\n    }\n  };\n}\n\n\n// ======================================================\n// IDENTIFICAR TIPO DE AÇÃO ESTRUTURADA\n// ======================================================\n\nconst replyId =\n  typeof interaction.reply_id === 'string'\n    ? interaction.reply_id.trim()\n    : '';\n\nconst isSelectSlot =\n  interaction.action === 'SELECT_SLOT';\n\nconst isRebook =\n  replyId.startsWith('rebook|');\n\n\n// ======================================================\n// REBOOK DE AGENDAMENTO CANCELADO\n// ======================================================\n\nif (isRebook) {\n\n  const parts =\n    replyId.split('|');\n\n  const appointmentId =\n    parts.length === 2\n      ? parts[1]\n      : null;\n\n\n  // ----------------------------------------------------\n  // VALIDAR FORMATO\n  // ----------------------------------------------------\n\n  if (\n    !appointmentId\n    || !UUID_REGEX.test(appointmentId)\n  ) {\n    return {\n      json: {\n        structured_command: {\n\n          kind:\n            'NEED_INFORMATION',\n\n          intent:\n            'REBOOK_APPOINTMENT',\n\n          action:\n            'NONE',\n\n          arguments:\n            emptyArguments(),\n\n          missing_information: [\n            'APPOINTMENT_REFERENCE'\n          ],\n\n          customer_meaning:\n            'Cliente clicou em um botão de reagendamento inválido.',\n\n          direct_response:\n            'Não consegui identificar o agendamento que você quer remarcar. Posso te ajudar a procurar outro horário.',\n\n          confidence:\n            1\n        }\n      }\n    };\n  }\n\n\n  // ----------------------------------------------------\n  // NÃO CONFIAR NO CONTEXTO ANTIGO DE BOOKING.\n  //\n  // O appointment_id é a referência determinística.\n  //\n  // O CORE validará:\n  // - empresa\n  // - cliente\n  // - status\n  // - cancelamento\n  // - profissional\n  // - serviços\n  // ----------------------------------------------------\n\n  return {\n    json: {\n      structured_command: {\n\n        kind:\n          'BUSINESS_ACTION',\n\n        intent:\n          'REBOOK_APPOINTMENT',\n\n        action:\n          'REBOOK_APPOINTMENT',\n\n        arguments: {\n          ...emptyArguments(),\n\n          appointment_id:\n            appointmentId\n        },\n\n        missing_information:\n          [],\n\n        customer_meaning:\n          'Cliente quer procurar um novo horário a partir do agendamento cancelado.',\n\n        direct_response:\n          null,\n\n        confidence:\n          1\n      }\n    }\n  };\n}\n\n\n// ======================================================\n// SELECT_SLOT\n// ======================================================\n\nif (isSelectSlot) {\n\n  const activeOffer =\n    context.active_offer\n    ?? null;\n\n  const clickedOfferId =\n    typeof interaction.slot_offer_id === 'string'\n      ? interaction.slot_offer_id.trim()\n      : null;\n\n  const optionNumber =\n    interaction.option_number\n    ?? null;\n\n\n  // ====================================================\n  // VALIDAR IDENTIFICADOR DA OFERTA CLICADA\n  // ====================================================\n\n  if (\n    !clickedOfferId\n    || !UUID_REGEX.test(clickedOfferId)\n  ) {\n    return {\n      json: {\n        structured_command: {\n\n          kind:\n            'NEED_INFORMATION',\n\n          intent:\n            'SELECT_SLOT',\n\n          action:\n            'NONE',\n\n          arguments:\n            emptyArguments(),\n\n          missing_information: [\n            'SLOT_OFFER'\n          ],\n\n          customer_meaning:\n            'Cliente clicou em uma opção cujo identificador da oferta é inválido.',\n\n          direct_response:\n            'Não consegui identificar essa lista de horários. Posso buscar opções atualizadas pra você.',\n\n          confidence:\n            1\n        }\n      }\n    };\n  }\n\n\n  // ====================================================\n  // NÃO EXISTE MAIS OFERTA ATIVA\n  //\n  // A lista expirou.\n  //\n  // Se estivermos dentro de um fluxo de rebooking,\n  // regeneramos a oferta automaticamente.\n  // ====================================================\n\n  if (!activeOffer) {\n\n    const automaticRebook =\n      buildRebookFromContext();\n\n\n    if (automaticRebook) {\n      return automaticRebook;\n    }\n\n\n    // --------------------------------------------------\n    // Não existe contexto suficiente para regenerar\n    // deterministicamente.\n    // --------------------------------------------------\n\n    return {\n      json: {\n        structured_command: {\n\n          kind:\n            'CONVERSATION',\n\n          intent:\n            'SELECT_SLOT',\n\n          action:\n            'NONE',\n\n          arguments:\n            emptyArguments(),\n\n          missing_information:\n            [],\n\n          customer_meaning:\n            'Cliente selecionou uma opção de uma oferta que expirou e não há contexto suficiente para regenerá-la automaticamente.',\n\n          direct_response:\n            'Essa lista já não está mais ativa. Me diga o dia ou horário que você procura e eu verifico novamente.',\n\n          confidence:\n            1\n        }\n      }\n    };\n  }\n\n\n  // ====================================================\n  // EXISTE OFERTA ATIVA, MAS O CLIENTE CLICOU EM OUTRA\n  //\n  // Isso pode ocorrer quando:\n  // - existe uma lista antiga na conversa;\n  // - uma nova oferta já foi criada depois;\n  // - o cliente clicou na mensagem antiga.\n  //\n  // NÃO criamos outra oferta aqui para evitar:\n  // - múltiplas ofertas concorrentes;\n  // - invalidar uma oferta recém-criada;\n  // - loops de regeneração.\n  // ====================================================\n\n  if (\n    activeOffer.slot_offer_id !== clickedOfferId\n  ) {\n    return {\n      json: {\n        structured_command: {\n\n          kind:\n            'CONVERSATION',\n\n          intent:\n            'SELECT_SLOT',\n\n          action:\n            'NONE',\n\n          arguments:\n            emptyArguments(),\n\n          missing_information:\n            [],\n\n          customer_meaning:\n            'Cliente clicou em uma lista antiga enquanto já existe uma oferta de horários mais recente ativa.',\n\n          direct_response:\n            'Essa lista é antiga. Use a lista de horários mais recente que enviei pra você.',\n\n          confidence:\n            1\n        }\n      }\n    };\n  }\n\n\n  // ====================================================\n  // VALIDAR OPTION_NUMBER\n  // ====================================================\n\n  if (\n    !Number.isInteger(optionNumber)\n    || optionNumber <= 0\n  ) {\n    return {\n      json: {\n        structured_command: {\n\n          kind:\n            'NEED_INFORMATION',\n\n          intent:\n            'SELECT_SLOT',\n\n          action:\n            'NONE',\n\n          arguments:\n            emptyArguments(),\n\n          missing_information: [\n            'SLOT_OPTION'\n          ],\n\n          customer_meaning:\n            'Cliente clicou em uma opção com número inválido.',\n\n          direct_response:\n            'Não consegui identificar esse horário. Pode escolher uma opção da lista novamente.',\n\n          confidence:\n            1\n        }\n      }\n    };\n  }\n\n\n  // ====================================================\n  // VALIDAR OPÇÃO\n  // ====================================================\n\n  const selectedOption =\n    Array.isArray(activeOffer.options)\n      ? activeOffer.options.find(\n          option =>\n            option.option_number === optionNumber\n        )\n      : null;\n\n\n  if (!selectedOption) {\n    return {\n      json: {\n        structured_command: {\n\n          kind:\n            'NEED_INFORMATION',\n\n          intent:\n            'SELECT_SLOT',\n\n          action:\n            'NONE',\n\n          arguments:\n            emptyArguments(),\n\n          missing_information: [\n            'SLOT_OPTION'\n          ],\n\n          customer_meaning:\n            'Cliente clicou em uma opção que não existe na oferta ativa.',\n\n          direct_response:\n            'Essa opção não está mais disponível. Pode escolher outro horário da lista.',\n\n          confidence:\n            1\n        }\n      }\n    };\n  }\n\n\n  // ====================================================\n  // COMANDO DETERMINÍSTICO SELECT_SLOT\n  // ====================================================\n\n  return {\n    json: {\n      structured_command: {\n\n        kind:\n          'BUSINESS_ACTION',\n\n        intent:\n          'SELECT_SLOT',\n\n        action:\n          'SELECT_SLOT',\n\n        arguments: {\n\n          service_id:\n            null,\n\n          professional_id:\n            selectedOption.professional_id\n            ?? null,\n\n          date:\n            selectedOption.local_date\n            ?? null,\n\n          period:\n            null,\n\n          time:\n            selectedOption.local_start\n            ?? interaction.title\n            ?? null,\n\n          time_from:\n            null,\n\n          time_until:\n            null,\n\n          option_number:\n            optionNumber,\n\n          appointment_id:\n            null,\n\n          allow_professional_fallback:\n            false,\n\n          slot_offer_id:\n            clickedOfferId\n        },\n\n        missing_information:\n          [],\n\n        customer_meaning:\n          `Cliente selecionou o horário ${selectedOption.local_start ?? interaction.title ?? ''}.`,\n\n        direct_response:\n          null,\n\n        confidence:\n          1\n      }\n    }\n  };\n}\n\n\n// ======================================================\n// INTERAÇÃO ESTRUTURADA DESCONHECIDA\n// ======================================================\n\nreturn {\n  json: {\n    structured_command: {\n\n      kind:\n        'NEED_INFORMATION',\n\n      intent:\n        'OTHER',\n\n      action:\n        'NONE',\n\n      arguments:\n        emptyArguments(),\n\n      missing_information: [\n        'CLARIFICATION'\n      ],\n\n      customer_meaning:\n        'Interação estruturada não reconhecida.',\n\n      direct_response:\n        'Não consegui identificar essa opção. Pode tentar novamente?',\n\n      confidence:\n        1\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        -180
+      ],
+      "id": "d3ed74c2-4fcf-429a-aa5b-07ce2dc7755c",
+      "name": "03S - PREPARAR COMANDO ESTRUTURADO"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const context = $('02 - CARREGAR CONTEXTO CORE').first().json.context ?? {};\nconst input = $('01 - NORMALIZAR ENTRADA').first().json;\nconst message = input.message ?? {};\n\nconst aiContext = JSON.parse(JSON.stringify(context));\nif (aiContext.conversation?.context && typeof aiContext.conversation.context === 'object') {\n  delete aiContext.conversation.context.last_analysis;\n}\n\nconst systemInstruction = \"\\nVocê é a IA ORQUESTRADORA do runtime conversacional da ML Automações.\\n\\nMISSÃO\\nInterpretar a mensagem do cliente e converter linguagem humana em um comando canônico.\\nVocê é uma camada de interpretação. O Business Core PostgreSQL é a única fonte de verdade\\noperacional e é o único componente autorizado a validar ou efetivar ações.\\n\\nREGRAS ABSOLUTAS\\n1. Nunca invente disponibilidade, preço, duração, serviço, profissional, agendamento, regra,\\n   ID, status, promoção, endereço, política ou resultado operacional.\\n2. Nunca confirme criação, cancelamento, remarcação, reagendamento, entrada em lista de espera\\n   ou qualquer mutação antes do Business Core confirmar.\\n3. Use somente IDs existentes no contexto. Se não houver ID seguro, não improvise.\\n4. Não trate uma mensagem isoladamente quando houver contexto de conversa, oferta ativa,\\n   agendamentos ou continuidade de rebooking/rescheduling.\\n5. Não execute raciocínio de banco, calendário, WhatsApp ou integrações externas. Interprete.\\n6. Se a intenção estiver clara mas faltar dado indispensável, use NEED_INFORMATION e faça\\n   uma única pergunta curta que obtenha o mínimo necessário.\\n7. Se houver duas interpretações operacionalmente diferentes e nenhuma for segura,\\n   use NEED_INFORMATION. Não chute.\\n8. Se o cliente pedir pessoa/atendente/humano, use HUMAN_HANDOFF.\\n9. Para conversa informacional que pode ser respondida só com o contexto, use CONVERSATION.\\n10. Para BUSINESS_ACTION, direct_response deve ser null.\\n\\nLINGUAGEM\\nCompreenda português informal, abreviações, erros, regionalismos, mensagens fragmentadas,\\nrespostas curtas, números, referências anafóricas e mistura de idiomas. Não corrija o cliente.\\nNão imite erros ortográficos. Responda no idioma predominante quando houver direct_response.\\n\\nCONTINUIDADE\\nUse, quando existirem:\\n- context.conversation\\n- context.conversation.context\\n- context.active_offer\\n- context.appointments\\n- context.services\\n- context.professionals\\n- context.customer\\n- context.brand\\n- context.settings\\n- context.clock\\n- context.recent_messages\\n\\nA mensagem mais recente pode corrigir apenas parte do pedido anterior. Preserve o restante\\nquando estiver claramente estabelecido.\\n\\nDATA/HORA\\ncontext.clock é a autoridade temporal. Resolva hoje/amanhã/depois de amanhã/dias da semana,\\nmanhã/tarde/noite, \\\"depois do almoço\\\", \\\"umas 2\\\", \\\"2 e meia\\\" etc. Campos estruturados:\\ndata YYYY-MM-DD e hora HH:MM, 24h. Nunca use a data do seu próprio sistema como substituta.\\n\\nSERVIÇOS E PROFISSIONAIS\\nUse apenas context.services e context.professionals.\\nprofessional_id pode ser null quando o cliente não escolher profissional ou disser \\\"qualquer um\\\".\\nSe houver preferência mas aceitar alternativa, use o profissional preferido e\\nallow_professional_fallback=true.\\n\\nAÇÕES OPERACIONAIS PERMITIDAS\\nSEARCH_AVAILABILITY\\nSELECT_SLOT\\nCANCEL_APPOINTMENT\\nRESCHEDULE_APPOINTMENT\\nREBOOK_APPOINTMENT\\nGET_APPOINTMENT\\nJOIN_WAITLIST\\nNONE\\n\\nDIFERENÇA OBRIGATÓRIA\\nRESCHEDULE_APPOINTMENT = alterar appointment ainda ativo, tipicamente CONFIRMED.\\nREBOOK_APPOINTMENT = procurar novo horário para substituir appointment já CANCELLED.\\nUma referência clara a appointment CANCELLED tem prioridade sobre palavras genéricas como\\n\\\"remarcar\\\", \\\"mudar\\\", \\\"procurar\\\" ou \\\"outro horário\\\".\\n\\nSEARCH_AVAILABILITY\\nUse para busca de novo atendimento. Serviço e data normalmente são indispensáveis.\\nProfissional, horário exato e período podem ser opcionais.\\n\\nSELECT_SLOT\\nUse quando context.active_offer existe e o cliente escolhe uma opção por número, horário,\\nposição ou referência inequívoca. Use somente option_number existente. Nunca invente opção.\\n\\nCANCEL_APPOINTMENT\\nIdentifique appointment em context.appointments. Se mais de um for plausível e a mensagem\\nnão desambiguar, NEED_INFORMATION com APPOINTMENT_REFERENCE.\\n\\nRESCHEDULE_APPOINTMENT\\nExige appointment ativo identificável. appointment_id é obrigatório.\\nO novo pedido pode especificar data/período/horário/profissional; o Core recupera os dados\\noriginais que não precisarem ser repetidos.\\n\\nREBOOK_APPOINTMENT\\nUse appointment CANCELLED como referência determinística. Se existir\\ncontext.conversation.context.rebooking.source_appointment_id e ele corresponder ao contexto,\\nprefira esse ID. Campos de serviço/profissional/data podem ser null quando o Core puder\\nrecuperá-los do appointment.\\n\\nGET_APPOINTMENT\\nUse para perguntas sobre agendamento existente. Se não houver referência específica mas\\no contexto tiver apenas um appointment plausível, appointment_id pode ser usado.\\n\\nJOIN_WAITLIST\\nUse quando o cliente pedir lista de espera e o contexto/regras permitirem que o Core avalie.\\nNão prometa vaga.\\n\\nCONVERSATION\\nUse para saudação, agradecimento, small talk, preço/duração/serviços/profissionais já presentes\\nno contexto, informações institucionais, orientações gerais do ramo e dúvidas sem mutação.\\nSERVICE_INFO é para informação real sobre serviços da empresa. BUSINESS_INFO é institucional.\\nOrientação geral usa OTHER quando não houver intent mais específico.\\n\\nHUMAN_HANDOFF\\nUse quando o cliente solicitar humano ou quando o contexto exigir intervenção humana.\\nA mensagem deve ser curta e não prometer que alguém responderá em um prazo específico.\\n\\nMÚLTIPLOS AGENDAMENTOS\\nNunca escolha silenciosamente entre appointments igualmente plausíveis. Use data, horário,\\nprofissional, serviço e contexto recente para desambiguar. Persistindo a ambiguidade,\\npergunte somente o necessário.\\n\\nOFERTAS EXPIRADAS / CLIQUES ANTIGOS\\nNão tente consertar manualmente. A camada estruturada e o Core validam oferta, expiração,\\nidempotência e clique antigo. Se chegar como linguagem natural, apenas interprete o pedido.\\n\\nSEGURANÇA OPERACIONAL\\nO Core valida ownership, tenant, status, conflitos, antecedência, agenda, concorrência,\\nidempotência, locks, holds, offer expiry, permissões e integração externa.\\nVocê não substitui nenhuma dessas validações.\\n\\nESTILO DA direct_response\\nNatural, curta, apropriada para WhatsApp, coerente com context.brand e com sinais linguísticos\\nobserváveis do cliente. Não faça inferências sobre idade, gênero, classe, saúde, religião,\\netnia, orientação sexual, personalidade psicológica ou outras características sensíveis.\\n\\nSAÍDA\\nRetorne SOMENTE o objeto do JSON Schema. Sem Markdown, comentários ou campos extras.\\n\";\n\nreturn {\n  json: {\n    orchestration_request: {\n      system_instruction: systemInstruction,\n      input: {\n        message: {\n          type: message.type ?? 'text',\n          text: message.normalized_text ?? message.text ?? null,\n          interaction: message.interaction ?? null,\n          media: message.media ?? null\n        },\n        context: aiContext\n      }\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        80
+      ],
+      "id": "260e59c4-1996-4657-a792-bdbd63742fcf",
+      "name": "03 - PREPARAR IA ORQUESTRADORA"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.6-luna",
+          "mode": "list",
+          "cachedResultName": "GPT-5.6-LUNA"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "={{ $json.orchestration_request.system_instruction }}"
+            },
+            {
+              "content": "={{ JSON.stringify($json.orchestration_request.input) }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_schema",
+              "verbosity": "low",
+              "name": "ml_orchestrator_v3",
+              "schema": "{\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"properties\": {\n    \"kind\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"BUSINESS_ACTION\",\n        \"CONVERSATION\",\n        \"NEED_INFORMATION\",\n        \"HUMAN_HANDOFF\"\n      ]\n    },\n    \"intent\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"BOOK_APPOINTMENT\",\n        \"CHECK_AVAILABILITY\",\n        \"SELECT_SLOT\",\n        \"SERVICE_INFO\",\n        \"BUSINESS_INFO\",\n        \"CANCEL_APPOINTMENT\",\n        \"RESCHEDULE_APPOINTMENT\",\n        \"REBOOK_APPOINTMENT\",\n        \"GET_APPOINTMENT\",\n        \"JOIN_WAITLIST\",\n        \"GREETING\",\n        \"SMALL_TALK\",\n        \"HUMAN_HANDOFF\",\n        \"OTHER\"\n      ]\n    },\n    \"action\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"SEARCH_AVAILABILITY\",\n        \"SELECT_SLOT\",\n        \"CANCEL_APPOINTMENT\",\n        \"RESCHEDULE_APPOINTMENT\",\n        \"REBOOK_APPOINTMENT\",\n        \"GET_APPOINTMENT\",\n        \"JOIN_WAITLIST\",\n        \"NONE\"\n      ]\n    },\n    \"arguments\": {\n      \"type\": \"object\",\n      \"additionalProperties\": false,\n      \"properties\": {\n        \"service_id\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"professional_id\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"date\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"period\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ],\n          \"enum\": [\n            \"MORNING\",\n            \"AFTERNOON\",\n            \"EVENING\",\n            null\n          ]\n        },\n        \"time\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"time_from\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"time_until\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"option_number\": {\n          \"type\": [\n            \"integer\",\n            \"null\"\n          ],\n          \"minimum\": 1\n        },\n        \"appointment_id\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"allow_professional_fallback\": {\n          \"type\": \"boolean\"\n        }\n      },\n      \"required\": [\n        \"service_id\",\n        \"professional_id\",\n        \"date\",\n        \"period\",\n        \"time\",\n        \"time_from\",\n        \"time_until\",\n        \"option_number\",\n        \"appointment_id\",\n        \"allow_professional_fallback\"\n      ]\n    },\n    \"missing_information\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"enum\": [\n          \"SERVICE\",\n          \"DATE\",\n          \"TIME\",\n          \"PROFESSIONAL\",\n          \"SLOT_OPTION\",\n          \"APPOINTMENT_REFERENCE\",\n          \"CLARIFICATION\"\n        ]\n      }\n    },\n    \"customer_meaning\": {\n      \"type\": \"string\"\n    },\n    \"direct_response\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"confidence\": {\n      \"type\": \"number\",\n      \"minimum\": 0,\n      \"maximum\": 1\n    }\n  },\n  \"required\": [\n    \"kind\",\n    \"intent\",\n    \"action\",\n    \"arguments\",\n    \"missing_information\",\n    \"customer_meaning\",\n    \"direct_response\",\n    \"confidence\"\n  ]\n}",
+              "description": "Interpreta a mensagem do cliente e retorna somente o comando estruturado da V3 para o Business Core.",
+              "strict": true
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        900,
+        80
+      ],
+      "id": "403b6667-ed5a-48bc-a45d-5701dcd951da",
+      "name": "04 - IA ORQUESTRADORA",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    structured_command: {\n      kind: 'CONVERSATION',\n      intent: 'OTHER',\n      action: 'NONE',\n      arguments: {\n        service_id: null,\n        professional_id: null,\n        date: null,\n        period: null,\n        time: null,\n        time_from: null,\n        time_until: null,\n        option_number: null,\n        appointment_id: null,\n        allow_professional_fallback: false\n      },\n      missing_information: [],\n      customer_meaning: 'Falha temporária da camada de interpretação; nenhuma ação operacional deve ser executada.',\n      direct_response: 'Tive um problema para interpretar sua mensagem agora. Pode me mandar de novo em uma frase curta?',\n      confidence: 1\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        220
+      ],
+      "id": "cb35899f-b701-4477-9ef7-ef3ab870548a",
+      "name": "04E - FALLBACK IA ORQUESTRADORA"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const envelope = $json;\n\nconst context =\n  $('02 - CARREGAR CONTEXTO CORE').item.json.context ?? {};\n\n\n// ======================================================\n// EXTRAIR COMANDO DA IA / COMANDO ESTRUTURADO\n// ======================================================\n\nlet command =\n  envelope.structured_command\n  ?? envelope.output?.[0]?.content\n      ?.find(item => item.type === 'output_text')\n      ?.text\n  ?? null;\n\nif (typeof command === 'string') {\n  try {\n    command = JSON.parse(command);\n  } catch {\n    command = null;\n  }\n}\n\n\n// ======================================================\n// ESTRUTURAS DE VALIDAÇÃO\n// ======================================================\n\nconst errors = [];\nconst warnings = [];\n\nif (!command || typeof command !== 'object') {\n  errors.push('INVALID_AI_OUTPUT');\n}\n\n\n// ======================================================\n// HELPERS\n// ======================================================\n\nconst uuidRegex =\n  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;\n\n\n// ======================================================\n// TIPOS E AÇÕES PERMITIDOS\n// ======================================================\n\nconst allowedKinds = new Set([\n  'BUSINESS_ACTION',\n  'CONVERSATION',\n  'NEED_INFORMATION',\n  'HUMAN_HANDOFF'\n]);\n\nconst allowedActions = new Set([\n  'SEARCH_AVAILABILITY',\n  'SELECT_SLOT',\n  'CANCEL_APPOINTMENT',\n  'RESCHEDULE_APPOINTMENT',\n  'REBOOK_APPOINTMENT',\n  'GET_APPOINTMENT',\n  'JOIN_WAITLIST',\n  'NONE'\n]);\n\nconst kind =\n  command?.kind ?? null;\n\nconst action =\n  command?.action ?? 'NONE';\n\n\nif (\n  kind\n  && !allowedKinds.has(kind)\n) {\n  errors.push('INVALID_KIND');\n}\n\n\nif (\n  action\n  && !allowedActions.has(action)\n) {\n  errors.push('INVALID_ACTION');\n}\n\n\n// ======================================================\n// DIRECT RESPONSE\n// ======================================================\n\nlet directResponse =\n  typeof command?.direct_response === 'string'\n    ? command.direct_response.trim()\n    : null;\n\nif (directResponse === '') {\n  directResponse = null;\n}\n\n\n// BUSINESS_ACTION nunca pode responder antes do CORE.\nif (\n  kind === 'BUSINESS_ACTION'\n  && directResponse !== null\n) {\n  warnings.push(\n    'DIRECT_RESPONSE_IGNORED_FOR_BUSINESS_ACTION'\n  );\n\n  directResponse = null;\n}\n\n\n// Conversa / informação faltante / handoff\n// precisam possuir mensagem pronta.\nif (\n  (\n    kind === 'CONVERSATION'\n    || kind === 'NEED_INFORMATION'\n    || kind === 'HUMAN_HANDOFF'\n  )\n  && !directResponse\n) {\n  errors.push('DIRECT_RESPONSE_REQUIRED');\n}\n\n\n// Tudo que não for BUSINESS_ACTION\n// deve usar action NONE.\nif (\n  kind !== 'BUSINESS_ACTION'\n  && action !== 'NONE'\n) {\n  errors.push(\n    'NON_BUSINESS_KIND_MUST_USE_NONE'\n  );\n}\n\n\n// BUSINESS_ACTION deve ter ação real.\nif (\n  kind === 'BUSINESS_ACTION'\n  && action === 'NONE'\n) {\n  errors.push(\n    'BUSINESS_ACTION_REQUIRES_ACTION'\n  );\n}\n\n\n// ======================================================\n// CATÁLOGO REAL\n// ======================================================\n\nconst services =\n  Array.isArray(context.services)\n    ? context.services\n    : [];\n\nconst professionals =\n  Array.isArray(context.professionals)\n    ? context.professionals\n    : [];\n\nconst serviceId =\n  command?.arguments?.service_id\n  ?? null;\n\nconst professionalId =\n  command?.arguments?.professional_id\n  ?? null;\n\n\n// ======================================================\n// VALIDAR SERVICE_ID\n// ======================================================\n\nlet validatedService = null;\n\nif (serviceId) {\n\n  validatedService =\n    services.find(\n      service =>\n        service.service_id === serviceId\n    )\n    ?? null;\n\n  if (!validatedService) {\n    errors.push('UNKNOWN_SERVICE_ID');\n  }\n}\n\n\n// ======================================================\n// VALIDAR PROFESSIONAL_ID\n// ======================================================\n\nlet validatedProfessional = null;\n\nif (professionalId) {\n\n  validatedProfessional =\n    professionals.find(\n      professional =>\n        professional.professional_id\n        === professionalId\n    )\n    ?? null;\n\n  if (!validatedProfessional) {\n    errors.push('UNKNOWN_PROFESSIONAL_ID');\n  }\n}\n\n\n// ======================================================\n// SERVIÇO × PROFISSIONAL\n// ======================================================\n\nif (\n  validatedService\n  && validatedProfessional\n) {\n\n  const professionalAllowed =\n    Array.isArray(\n      validatedService.professionals\n    )\n    && validatedService.professionals.some(\n      professional =>\n        professional.professional_id\n        === validatedProfessional.professional_id\n    );\n\n  if (!professionalAllowed) {\n    errors.push(\n      'PROFESSIONAL_DOES_NOT_PERFORM_SERVICE'\n    );\n  }\n}\n\n\n// ======================================================\n// DATA\n// ======================================================\n\nconst requestedDate =\n  command?.arguments?.date\n  ?? null;\n\nconst localDate =\n  context.clock?.local_date\n  ?? null;\n\n\nif (\n  requestedDate\n  && !/^\\d{4}-\\d{2}-\\d{2}$/.test(\n    requestedDate\n  )\n) {\n  errors.push('INVALID_DATE_FORMAT');\n}\n\n\nif (\n  action === 'SEARCH_AVAILABILITY'\n  && requestedDate\n  && localDate\n  && requestedDate < localDate\n) {\n  errors.push('DATE_IN_PAST');\n}\n\n\n// ======================================================\n// SEARCH_AVAILABILITY\n// ======================================================\n\nif (\n  kind === 'BUSINESS_ACTION'\n  && action === 'SEARCH_AVAILABILITY'\n) {\n\n  if (!serviceId) {\n    errors.push(\n      'SEARCH_REQUIRES_SERVICE'\n    );\n  }\n\n  if (!requestedDate) {\n    errors.push(\n      'SEARCH_REQUIRES_DATE'\n    );\n  }\n}\n\n\n// ======================================================\n// SELECT_SLOT\n// ======================================================\n\nif (\n  kind === 'BUSINESS_ACTION'\n  && action === 'SELECT_SLOT'\n) {\n\n  const offer =\n    context.active_offer ?? null;\n\n  const optionNumber =\n    command?.arguments?.option_number\n    ?? null;\n\n\n  if (!offer) {\n    errors.push(\n      'NO_ACTIVE_SLOT_OFFER'\n    );\n  }\n\n\n  if (!optionNumber) {\n    errors.push(\n      'SELECT_SLOT_REQUIRES_OPTION'\n    );\n  }\n\n\n  if (\n    offer\n    && optionNumber\n  ) {\n\n    const optionExists =\n      Array.isArray(offer.options)\n      && offer.options.some(\n        option =>\n          option.option_number\n          === optionNumber\n      );\n\n    if (!optionExists) {\n      errors.push(\n        'UNKNOWN_SLOT_OPTION'\n      );\n    }\n  }\n}\n\n\n// ======================================================\n// REBOOK_APPOINTMENT\n// ======================================================\n\nif (\n  kind === 'BUSINESS_ACTION'\n  && action === 'REBOOK_APPOINTMENT'\n) {\n\n  const appointmentId =\n    command?.arguments?.appointment_id\n    ?? null;\n\n\n  if (!appointmentId) {\n\n    errors.push(\n      'REBOOK_REQUIRES_APPOINTMENT'\n    );\n\n  } else if (\n    typeof appointmentId !== 'string'\n    || !uuidRegex.test(appointmentId)\n  ) {\n\n    errors.push(\n      'INVALID_APPOINTMENT_ID'\n    );\n  }\n}\n\n\n// ======================================================\n// CANCEL_APPOINTMENT\n//\n// Aqui validamos apenas formato.\n// Autorização, dono do appointment e regras de horário\n// continuam sendo responsabilidade do CORE.\n// ======================================================\n\nif (\n  kind === 'BUSINESS_ACTION'\n  && action === 'CANCEL_APPOINTMENT'\n) {\n\n  const appointmentId =\n    command?.arguments?.appointment_id\n    ?? null;\n\n\n  if (!appointmentId) {\n\n    errors.push(\n      'CANCEL_REQUIRES_APPOINTMENT'\n    );\n\n  } else if (\n    typeof appointmentId !== 'string'\n    || !uuidRegex.test(appointmentId)\n  ) {\n\n    errors.push(\n      'INVALID_APPOINTMENT_ID'\n    );\n  }\n}\n\n\n// ======================================================\n// RESCHEDULE_APPOINTMENT\n//\n// Ainda não executamos o motor completo aqui,\n// mas já protegemos appointment_id.\n// ======================================================\n\nif (\n  kind === 'BUSINESS_ACTION'\n  && action === 'RESCHEDULE_APPOINTMENT'\n) {\n\n  const appointmentId =\n    command?.arguments?.appointment_id\n    ?? null;\n\n\n  if (!appointmentId) {\n\n    errors.push(\n      'RESCHEDULE_REQUIRES_APPOINTMENT'\n    );\n\n  } else if (\n    typeof appointmentId !== 'string'\n    || !uuidRegex.test(appointmentId)\n  ) {\n\n    errors.push(\n      'INVALID_APPOINTMENT_ID'\n    );\n  }\n}\n\n\n// ======================================================\n// GET_APPOINTMENT\n// ======================================================\n\nif (\n  kind === 'BUSINESS_ACTION'\n  && action === 'GET_APPOINTMENT'\n) {\n\n  const appointmentId =\n    command?.arguments?.appointment_id\n    ?? null;\n\n\n  if (\n    appointmentId\n    && (\n      typeof appointmentId !== 'string'\n      || !uuidRegex.test(appointmentId)\n    )\n  ) {\n\n    errors.push(\n      'INVALID_APPOINTMENT_ID'\n    );\n  }\n}\n\n\n// ======================================================\n// MISSING INFORMATION\n// ======================================================\n\nconst missingInformation =\n  Array.isArray(\n    command?.missing_information\n  )\n    ? command.missing_information\n    : [];\n\n\nif (\n  kind === 'NEED_INFORMATION'\n  && missingInformation.length === 0\n) {\n  warnings.push(\n    'NEED_INFORMATION_WITHOUT_MISSING_FIELDS'\n  );\n}\n\n\n// ======================================================\n// CONFIANÇA\n// ======================================================\n\nconst confidence =\n  Number(\n    command?.confidence ?? 0\n  );\n\nconst minimumConfidence =\n  Number(\n    context.ai_settings\n      ?.minimum_intent_confidence\n    ?? 0.7\n  );\n\n\nif (\n  kind === 'BUSINESS_ACTION'\n  && confidence < minimumConfidence\n) {\n  errors.push(\n    'LOW_AI_CONFIDENCE_FOR_EXECUTION'\n  );\n}\n\n\n// ======================================================\n// DEFINIR ROTA ESTRUTURAL\n// ======================================================\n\nlet route = 'INVALID';\n\nif (errors.length === 0) {\n\n  if (kind === 'BUSINESS_ACTION') {\n\n    route = 'CORE';\n\n  } else if (\n    kind === 'CONVERSATION'\n    || kind === 'NEED_INFORMATION'\n  ) {\n\n    route = 'DIRECT_RESPONSE';\n\n  } else if (\n    kind === 'HUMAN_HANDOFF'\n  ) {\n\n    route = 'HUMAN_HANDOFF';\n\n  }\n}\n\n\n// ======================================================\n// OUTPUT CANÔNICO V3\n//\n// action_args porque \"arguments\" dá problema\n// em expressões do sandbox do n8n.\n// ======================================================\n\nreturn {\n  json: {\n\n    validated_command: {\n\n      valid:\n        errors.length === 0,\n\n      executable:\n        errors.length === 0\n        && route === 'CORE',\n\n      route,\n\n      kind,\n\n      intent:\n        command?.intent\n        ?? null,\n\n      action,\n\n      action_args: {\n        ...(command?.arguments ?? {}),\n\n        service_id:\n          validatedService?.service_id\n          ?? serviceId\n          ?? null,\n\n        professional_id:\n          validatedProfessional?.professional_id\n          ?? professionalId\n          ?? null\n      },\n\n      service:\n        validatedService,\n\n      professional:\n        validatedProfessional,\n\n      missing_information:\n        missingInformation,\n\n      customer_meaning:\n        command?.customer_meaning\n        ?? '',\n\n      direct_response:\n        directResponse,\n\n      confidence,\n\n      minimum_confidence:\n        minimumConfidence,\n\n      errors,\n\n      warnings\n    },\n\n    context\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        -40
+      ],
+      "id": "0d6a61eb-1e36-4dee-88f5-10bf8fe62dd3",
+      "name": "05 - VALIDAR COMANDO IA"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.validated_command.route }}",
+                    "rightValue": "CORE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "f9058d1c-04bb-47fc-9d17-056d146e1870"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "CORE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c4b43fe2-d355-46b4-be11-4278c29278e2",
+                    "leftValue": "={{ $json.validated_command.route }}",
+                    "rightValue": "DIRECT_RESPONSE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "DIRECT_RESPONSE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "0d48cc9a-d5ca-4c00-897a-b26faca42a8d",
+                    "leftValue": "={{ $json.validated_command.route }}",
+                    "rightValue": "HUMAN_HANDOFF",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "HUMAN_HANDOFF"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "4e8fbfe7-8186-4dac-9e29-af79ddc88ea0",
+                    "leftValue": "={{ $json.validated_command.route }}",
+                    "rightValue": "INVALID",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "INVALID"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1420,
+        -40
+      ],
+      "id": "417e9cd5-818f-4f02-90ac-a9728bb199cd",
+      "name": "05A - ROTEAR RESULTADO DA IA"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.request_human_handoff_v1(\n    $1::UUID,\n    $2::UUID,\n    $3::UUID,\n    $4::TEXT,\n    $5::TEXT\n) AS handoff;",
+        "options": {
+          "queryReplacement": "={{ [\n  $('02 - CARREGAR CONTEXTO CORE').first().json.context.business.id,\n  $('02 - CARREGAR CONTEXTO CORE').first().json.context.conversation.id,\n  $('02 - CARREGAR CONTEXTO CORE').first().json.context.customer.id,\n  $('05 - VALIDAR COMANDO IA').first().json.validated_command.customer_meaning ?? 'CUSTOMER_REQUEST',\n  $execution.id\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1680,
+        240
+      ],
+      "id": "afd2f84d-e222-43d1-b177-7b699dcc7d7f",
+      "name": "05H - REGISTRAR HUMAN HANDOFF",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.execute_assistant_action_v4(\n    $1::UUID,\n    $2::UUID,\n    $3::UUID,\n    $4::TEXT,\n    $5::TEXT,\n    $6::TEXT,\n    $7::JSONB,\n    $8::TEXT\n) AS execution;",
+        "options": {
+          "queryReplacement": "={{ [\n  $json.context.business.id,\n  $json.context.conversation.id,\n  $json.context.customer.id,\n  $json.context.channel.channel_type,\n  $json.context.channel.provider,\n  $json.validated_command.action,\n  JSON.stringify($json.validated_command.action_args ?? {}),\n  $execution.id\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1680,
+        -220
+      ],
+      "id": "4b5ebc66-1032-4dd3-932d-0b8088eed717",
+      "name": "06 - EXECUTAR AÇÃO CORE",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const execution = $json.execution ?? {};\nconst validated = $('05 - VALIDAR COMANDO IA').first().json.validated_command ?? {};\nconst context = $('05 - VALIDAR COMANDO IA').first().json.context ?? {};\nconst originalInput = $('01 - NORMALIZAR ENTRADA').first().json;\n\nconst systemInstruction = \"\\nVocê é o RESPONSE ENGINE da ML Automações.\\n\\nOBJETIVO\\nTransformar fatos já confirmados pelo Business Core em uma mensagem curta, natural,\\ncontextual e adequada ao WhatsApp. O Core é a única fonte de verdade operacional.\\n\\nREGRA PRINCIPAL\\nVocê pode mudar a forma de comunicar, mas nunca pode mudar os fatos.\\n\\nNUNCA INVENTE OU ALTERE\\n- disponibilidade;\\n- horários, datas ou timezone;\\n- preços, moeda ou duração;\\n- serviço ou profissional;\\n- appointment_id, status ou resultado;\\n- motivo de cancelamento;\\n- política, regra ou permissão;\\n- existência de vaga, confirmação, cancelamento, remarcação ou rebooking;\\n- resultado de Calendar, WhatsApp ou qualquer integração.\\n\\nSe core_execution.ok for false, não diga que a ação deu certo.\\nSe houver HOLD sem confirmação, não diga que está confirmado.\\nSe houver SLOT_OFFER, não liste opções no texto quando a interface interativa as exibirá.\\n\\nFONTES\\nUse exclusivamente:\\n- core_execution\\n- interpreted_command\\n- original_message\\n- recent_messages\\n- business\\n- brand\\n- customer\\n- clock\\n\\nSLOT_OFFER\\nQuando result_type ou resultado representar oferta de horários:\\n- escreva apenas uma introdução humana;\\n- não enumere horários;\\n- convide o cliente a escolher na lista/botões;\\n- mencione serviço/profissional/preço somente se estiverem nos fatos e ajudarem.\\n\\nCONFIRMAÇÃO\\nQuando o Core confirmar um appointment, comunique os dados disponíveis de forma enxuta.\\nNão transforme ausência de dado em suposição.\\n\\nCANCELAMENTO\\nSe confirmado, informe que o appointment foi cancelado. Motivo público só pode ser repetido\\nse estiver explicitamente presente. Se o Core indicar possibilidade de rebooking, pode convidar\\no cliente a procurar outro horário.\\n\\nREMARCAÇÃO\\nSó diga que foi remarcado quando o Core retornar sucesso de rescheduling. Se o Core apenas\\nofereceu horários, trate como oferta e peça escolha.\\n\\nREBOOKING\\nAppointment cancelado + nova busca não significa novo appointment confirmado. Diferencie\\noferta de horários de confirmação.\\n\\nGET_APPOINTMENT\\nApresente apenas os dados reais retornados.\\n\\nWAITLIST\\nSó diga que entrou na lista se o Core confirmar. Não prometa atendimento.\\n\\nERROS\\nNão exponha stack trace, SQL, n8n, nomes de funções, IDs internos desnecessários ou códigos\\ntécnicos. Explique em linguagem humana. Quando houver um próximo passo seguro e evidente,\\nsugira-o sem inventar disponibilidade.\\n\\nNATURALIDADE\\nContinue a conversa em vez de reiniciá-la. Evite fórmulas repetitivas. Respeite brand:\\nbrand_personality, default_treatment, minimum_formality, maximum_informality, allow_slang,\\nemoji_max_per_message, response_guidelines, greeting_text e farewell_text.\\nUse o idioma predominante do cliente. Não copie erros ortográficos.\\n\\nTAMANHO\\nPrefira mensagens curtas ou médias, com quebras de linha somente quando melhorarem a leitura.\\n\\nSAÍDA\\nRetorne SOMENTE o objeto do JSON Schema.\\nO campo text contém exclusivamente a mensagem destinada ao cliente.\\n\";\n\nreturn {\n  json: {\n    response_request: {\n      system_instruction: systemInstruction,\n      input: {\n        original_message: originalInput.message?.normalized_text ?? originalInput.message?.text ?? null,\n        interpreted_command: validated,\n        core_execution: execution,\n        recent_messages: context.recent_messages ?? [],\n        business: {\n          name: context.business?.name ?? null,\n          timezone: context.business?.timezone ?? null,\n          locale: context.business?.locale ?? 'pt-BR'\n        },\n        brand: context.brand ?? {},\n        customer: {\n          name: context.customer?.name ?? null,\n          communication_profile: context.customer?.communication_profile ?? {},\n          preferences: context.customer?.preferences ?? {}\n        },\n        clock: context.clock ?? {}\n      }\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1940,
+        -220
+      ],
+      "id": "a27ab64c-7e8b-4f4d-b5fc-1512e4731ec2",
+      "name": "07 - PREPARAR RESPONSE ENGINE"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.6-luna",
+          "mode": "list",
+          "cachedResultName": "GPT-5.6-LUNA"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "={{ $json.response_request.system_instruction }}"
+            },
+            {
+              "content": "={{ JSON.stringify($json.response_request.input) }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_schema",
+              "verbosity": "low",
+              "name": "ml_response_v3",
+              "schema": "{\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"properties\": {\n    \"text\": {\n      \"type\": \"string\"\n    },\n    \"response_type\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"SLOT_OPTIONS\",\n        \"CONFIRMATION\",\n        \"INFORMATION\",\n        \"QUESTION\",\n        \"ERROR\",\n        \"HANDOFF\",\n        \"GENERAL\"\n      ]\n    },\n    \"should_send\": {\n      \"type\": \"boolean\"\n    }\n  },\n  \"required\": [\n    \"text\",\n    \"response_type\",\n    \"should_send\"\n  ]\n}",
+              "description": "Gera a resposta final ao cliente usando somente os fatos confirmados pelo Business Core.",
+              "strict": true
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        2200,
+        -220
+      ],
+      "id": "274097d0-f586-42f2-a7ff-59abf0d00e4b",
+      "name": "08 - RESPONSE ENGINE IA",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const execution = $('06 - EXECUTAR AÇÃO CORE').first().json.execution ?? {};\nconst context = $('05 - VALIDAR COMANDO IA').first().json.context ?? {};\nconst result = execution.result ?? {};\nconst rt = String(execution.result_type ?? result.result_type ?? '').toUpperCase();\nconst code = String(execution.code ?? result.code ?? '').toUpperCase();\n\nconst fmtDate = value => value ? String(value) : null;\nconst fmtTime = value => value ? String(value).slice(0,5) : null;\n\nlet text = null;\nlet responseType = 'GENERAL';\n\nconst slots = Array.isArray(result.slots) ? result.slots : [];\nif ((rt.includes('SLOT_OFFER') || code.includes('SLOT_OFFER')) && slots.length > 0) {\n  text = 'Encontrei algumas opções de horário. Escolhe a que ficar melhor pra você 👇';\n  responseType = 'SLOT_OPTIONS';\n} else if (execution.ok === true && (rt.includes('RESCHEDULE') || code === 'APPOINTMENT_RESCHEDULED')) {\n  const a = result.appointment ?? result.replacement_appointment ?? execution.appointment ?? {};\n  const d = a.local_date ?? result.local_date ?? null;\n  const t = a.local_start ?? result.local_start ?? null;\n  text = `Pronto, seu horário foi remarcado${d ? ` para ${fmtDate(d)}` : ''}${t ? ` às ${fmtTime(t)}` : ''}.`;\n  responseType = 'CONFIRMATION';\n} else if (execution.ok === true && (rt.includes('CANCELLATION') || code === 'APPOINTMENT_CANCELLED')) {\n  text = 'Certo, seu agendamento foi cancelado.';\n  responseType = 'CONFIRMATION';\n} else if (execution.ok === true && (rt.includes('CONFIRM') || code.includes('CONFIRMED'))) {\n  const a = result.appointment ?? execution.appointment ?? {};\n  const d = a.local_date ?? result.local_date ?? null;\n  const t = a.local_start ?? result.local_start ?? null;\n  text = `Fechado, seu horário ficou confirmado${d ? ` para ${fmtDate(d)}` : ''}${t ? ` às ${fmtTime(t)}` : ''}.`;\n  responseType = 'CONFIRMATION';\n} else if (execution.ok === true && rt.includes('APPOINTMENT')) {\n  const a = result.appointment ?? result ?? {};\n  const d = a.local_date ?? null;\n  const t = a.local_start ?? null;\n  text = (d || t)\n    ? `Seu agendamento${d ? ` é em ${fmtDate(d)}` : ''}${t ? ` às ${fmtTime(t)}` : ''}.`\n    : 'Encontrei seu agendamento.';\n  responseType = 'INFORMATION';\n} else if (execution.ok === true && (rt.includes('WAITLIST') || code.includes('WAITLIST'))) {\n  text = 'Certo, registrei sua solicitação na lista de espera.';\n  responseType = 'CONFIRMATION';\n} else if (execution.ok === true) {\n  text = 'Certo, concluí essa solicitação.';\n  responseType = 'CONFIRMATION';\n} else {\n  text = 'Não consegui concluir isso agora. Tenta novamente ou me diga de outra forma o que você precisa.';\n  responseType = 'ERROR';\n}\n\nreturn {\n  json: {\n    fallback_response: {\n      text,\n      response_type: responseType,\n      should_send: true,\n      source: 'DETERMINISTIC_FALLBACK'\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2460,
+        -40
+      ],
+      "id": "1f32acc5-faf8-4042-a59c-19908d5010b9",
+      "name": "08E - FALLBACK RESPONSE ENGINE"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const validated = $('05 - VALIDAR COMANDO IA').first().json.validated_command ?? {};\nlet coreExecution = {};\ntry {\n  coreExecution = $('06 - EXECUTAR AÇÃO CORE').first().json.execution ?? {};\n} catch {\n  coreExecution = {};\n}\n\nlet text = null;\nlet responseType = 'GENERAL';\nlet shouldSend = true;\nlet source = null;\n\nif (validated.route !== 'CORE') {\n  text = typeof validated.direct_response === 'string' ? validated.direct_response.trim() : null;\n  if (validated.kind === 'NEED_INFORMATION') responseType = 'QUESTION';\n  else if (validated.kind === 'HUMAN_HANDOFF') responseType = 'HANDOFF';\n  else if (validated.route === 'INVALID') responseType = 'ERROR';\n  else responseType = 'INFORMATION';\n  source = validated.route === 'INVALID' ? 'VALIDATION_FALLBACK' : 'ORCHESTRATOR_DIRECT';\n}\n\nif (!text && $json.fallback_response) {\n  text = String($json.fallback_response.text ?? '').trim();\n  responseType = $json.fallback_response.response_type ?? 'GENERAL';\n  shouldSend = $json.fallback_response.should_send !== false;\n  source = $json.fallback_response.source ?? 'DETERMINISTIC_FALLBACK';\n}\n\nif (!text) {\n  let response = $json.output?.[0]?.content?.find(c => c.type === 'output_text')?.text ?? null;\n  if (typeof response === 'string') {\n    try { response = JSON.parse(response); } catch { /* keep string below */ }\n  }\n  if (response && typeof response === 'object') {\n    text = String(response.text ?? '').trim();\n    responseType = response.response_type ?? 'GENERAL';\n    shouldSend = response.should_send !== false;\n  } else if (typeof response === 'string') {\n    text = response.trim();\n  }\n  source = 'RESPONSE_ENGINE';\n}\n\nif (!text) {\n  text = validated.route === 'INVALID'\n    ? 'Não consegui entender essa solicitação com segurança. Pode me dizer de outra forma o que você precisa?'\n    : 'Tive um problema para preparar a resposta. Pode tentar novamente?';\n  responseType = 'ERROR';\n  shouldSend = true;\n  source = 'FINAL_SAFETY_FALLBACK';\n}\n\nreturn {\n  json: {\n    final_response: {\n      valid: true,\n      should_send: shouldSend,\n      text: text.trim(),\n      response_type: responseType,\n      source,\n      route: validated.route ?? null,\n      kind: validated.kind ?? null,\n      intent: validated.intent ?? null\n    },\n    core_execution: coreExecution\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2720,
+        -40
+      ],
+      "id": "b71323a1-7bb7-4fd5-98c1-89c8bdfb4396",
+      "name": "09 - NORMALIZAR RESPOSTA FINAL"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.finalize_assistant_turn_v2(\n    $1::UUID,\n    $2::UUID,\n    $3::UUID,\n    $4::UUID,\n    $5::TEXT,\n    $6::TEXT,\n    $7::UUID,\n    $8::TEXT,\n    $9::NUMERIC,\n    $10::TEXT,\n    $11::TEXT,\n    $12::TEXT,\n    $13::TEXT,\n    $14::TEXT,\n    $15::TEXT,\n    $16::BOOLEAN,\n    $17::JSONB,\n    $18::TEXT\n) AS finalization;",
+        "options": {
+          "queryReplacement": "={{ [\n  $('02 - CARREGAR CONTEXTO CORE').first().json.context.business.id,\n  $('02 - CARREGAR CONTEXTO CORE').first().json.context.conversation.id,\n  $('02 - CARREGAR CONTEXTO CORE').first().json.context.customer.id,\n  $('02 - CARREGAR CONTEXTO CORE').first().json.context.customer.channel_id,\n  $('02 - CARREGAR CONTEXTO CORE').first().json.context.channel.channel_type,\n  $('02 - CARREGAR CONTEXTO CORE').first().json.context.channel.provider,\n  $('02 - CARREGAR CONTEXTO CORE').first().json.context.turn.message_id,\n  $('05 - VALIDAR COMANDO IA').first().json.validated_command.intent,\n  $('05 - VALIDAR COMANDO IA').first().json.validated_command.confidence,\n  $('05 - VALIDAR COMANDO IA').first().json.validated_command.kind,\n  $('05 - VALIDAR COMANDO IA').first().json.validated_command.route,\n  $('05 - VALIDAR COMANDO IA').first().json.validated_command.action,\n  $json.final_response.text,\n  $json.final_response.response_type,\n  $json.final_response.source,\n  $json.final_response.should_send,\n  JSON.stringify($json.core_execution ?? {}),\n  $execution.id\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        2980,
+        -40
+      ],
+      "id": "a2ded7c8-0613-49d0-a73f-f9b5daa7291e",
+      "name": "10 - FINALIZAR TURNO + OUTBOX",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const f = $json.finalization ?? {};\nif (f.ok !== true) {\n  throw new Error(`FINALIZE_ASSISTANT_TURN_FAILED:${f.code ?? 'UNKNOWN'}`);\n}\nreturn { json: { ok: true, finalization: f } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3240,
+        -40
+      ],
+      "id": "bf82940a-7142-42cc-a1d4-23b2c9e7aa6c",
+      "name": "10A - ASSERT FINALIZATION"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "00 - WHATSAPP TRIGGER": {
+      "main": [
+        [
+          {
+            "node": "00B - NORMALIZAR WEBHOOK META",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "00B - NORMALIZAR WEBHOOK META": {
+      "main": [
+        [
+          {
+            "node": "01 - NORMALIZAR ENTRADA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "01 - NORMALIZAR ENTRADA": {
+      "main": [
+        [
+          {
+            "node": "02 - CARREGAR CONTEXTO CORE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 - CARREGAR CONTEXTO CORE": {
+      "main": [
+        [
+          {
+            "node": "02A - CONTROLAR TURNO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02A - CONTROLAR TURNO": {
+      "main": [
+        [
+          {
+            "node": "02B - ROTEAR TIPO DE ENTRADA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        [
+          {
+            "node": "02E - FALHA PREPARE TURN",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02B - ROTEAR TIPO DE ENTRADA": {
+      "main": [
+        [
+          {
+            "node": "03S - PREPARAR COMANDO ESTRUTURADO",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "03 - PREPARAR IA ORQUESTRADORA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03S - PREPARAR COMANDO ESTRUTURADO": {
+      "main": [
+        [
+          {
+            "node": "05 - VALIDAR COMANDO IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03 - PREPARAR IA ORQUESTRADORA": {
+      "main": [
+        [
+          {
+            "node": "04 - IA ORQUESTRADORA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04 - IA ORQUESTRADORA": {
+      "main": [
+        [
+          {
+            "node": "05 - VALIDAR COMANDO IA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "04E - FALLBACK IA ORQUESTRADORA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04E - FALLBACK IA ORQUESTRADORA": {
+      "main": [
+        [
+          {
+            "node": "05 - VALIDAR COMANDO IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05 - VALIDAR COMANDO IA": {
+      "main": [
+        [
+          {
+            "node": "05A - ROTEAR RESULTADO DA IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05A - ROTEAR RESULTADO DA IA": {
+      "main": [
+        [
+          {
+            "node": "06 - EXECUTAR AÇÃO CORE",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "09 - NORMALIZAR RESPOSTA FINAL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "05H - REGISTRAR HUMAN HANDOFF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "09 - NORMALIZAR RESPOSTA FINAL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05H - REGISTRAR HUMAN HANDOFF": {
+      "main": [
+        [
+          {
+            "node": "09 - NORMALIZAR RESPOSTA FINAL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "06 - EXECUTAR AÇÃO CORE": {
+      "main": [
+        [
+          {
+            "node": "07 - PREPARAR RESPONSE ENGINE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "07 - PREPARAR RESPONSE ENGINE": {
+      "main": [
+        [
+          {
+            "node": "08 - RESPONSE ENGINE IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "08 - RESPONSE ENGINE IA": {
+      "main": [
+        [
+          {
+            "node": "09 - NORMALIZAR RESPOSTA FINAL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "08E - FALLBACK RESPONSE ENGINE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "08E - FALLBACK RESPONSE ENGINE": {
+      "main": [
+        [
+          {
+            "node": "09 - NORMALIZAR RESPOSTA FINAL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "09 - NORMALIZAR RESPOSTA FINAL": {
+      "main": [
+        [
+          {
+            "node": "10 - FINALIZAR TURNO + OUTBOX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10 - FINALIZAR TURNO + OUTBOX": {
+      "main": [
+        [
+          {
+            "node": "10A - ASSERT FINALIZATION",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "44092269-c652-4858-bb82-60ebb2cfc093",
+  "tags": []
+}

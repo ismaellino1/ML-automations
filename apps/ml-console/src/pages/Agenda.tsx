@@ -1,0 +1,1 @@
+import {ResourcePage} from "../components/ResourcePage"; export default function Agenda(){return <ResourcePage title="Agenda" description="Agenda unificada com criação, cancelamento, remarcação, bloqueios e status."/>}

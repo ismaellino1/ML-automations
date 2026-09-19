@@ -1,0 +1,124 @@
+{
+  "name": "01 - ML INBOUND GATEWAY PROD FINAL",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -620,
+        0
+      ],
+      "id": "d83f131c-1163-5b00-81b9-aaeb01e5d887",
+      "name": "00 - WHATSAPP TRIGGER",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw=$json.entry?.[0]?.changes?.[0]?.value??$json;\nconst status=raw.statuses?.[0]??null;\nif(status){\n  const ts=status.timestamp?new Date(Number(status.timestamp)*1000).toISOString():new Date().toISOString();\n  return {json:{event_type:'DELIVERY_STATUS',event_key:`STATUS:${status.id}:${status.status}:${status.timestamp??''}`,external_message_id:status.id??null,status:String(status.status??'').toUpperCase(),provider_timestamp:ts,raw_payload:raw}};\n}\nconst message=raw.messages?.[0]??null;const contact=raw.contacts?.[0]??null;\nif(!message)return {json:{event_type:'IGNORE',event_key:null,reason:'NO_MESSAGE',raw_payload:raw}};\nconst type=String(message.type??'unknown').toLowerCase();let text=message.text?.body??null;let interaction=null;let media=null;\nif(type==='interactive'){\n const reply=message.interactive?.button_reply??message.interactive?.list_reply??null;\n if(reply){const id=String(reply.id??'');const slot=id.match(/^slot\\|([0-9a-f-]{36})\\|(\\d+)$/i);const rebook=id.match(/^rebook\\|([0-9a-f-]{36})$/i);interaction={kind:message.interactive?.button_reply?'BUTTON_REPLY':'LIST_REPLY',reply_id:id,title:reply.title??null,action:slot?'SELECT_SLOT':rebook?'REBOOK_APPOINTMENT':null,slot_offer_id:slot?slot[1]:null,option_number:slot?Number(slot[2]):null,appointment_id:rebook?rebook[1]:null};text=reply.title??text;}\n}\nif(['audio','image','document','video','sticker'].includes(type)){const m=message[type]??{};media={id:m.id??null,mime_type:m.mime_type??null,sha256:m.sha256??null,caption:m.caption??null,filename:m.filename??null};text=m.caption??text;}\nif(type==='location'){const l=message.location??{};text=`Localização compartilhada: latitude ${l.latitude}, longitude ${l.longitude}${l.name?`, ${l.name}`:''}${l.address?`, ${l.address}`:''}`;}\nif(type==='contacts'){const cs=message.contacts??[];text=`Contato(s) compartilhado(s): ${cs.map(c=>c.name?.formatted_name??c.name?.first_name??'contato').join(', ')}`;}\nif(type==='reaction'){return {json:{event_type:'REACTION',event_key:`REACTION:${message.id??crypto.randomUUID()}`,raw_payload:raw}};}\nconst ts=message.timestamp?new Date(Number(message.timestamp)*1000).toISOString():new Date().toISOString();\nreturn {json:{event_type:'INBOUND_MESSAGE',event_key:`IN:${message.id??crypto.randomUUID()}`,channel:{type:'WHATSAPP',provider:'META',external_channel_id:raw.metadata?.phone_number_id??null},customer:{external_user_id:message.from??null,profile_name:contact?.profile?.name??null},message:{external_message_id:message.id??null,idempotency_key:message.id?`IN:META:${message.id}`:null,type,text,interaction,media,reply_to_external_message_id:message.context?.id??null,provider_timestamp:ts,raw_payload:raw},received_at:new Date().toISOString()}};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -360,
+        0
+      ],
+      "id": "c9601003-fd36-5e1a-aada-ec0552014d67",
+      "name": "01 - NORMALIZAR EVENTO META"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.ingest_whatsapp_webhook_final($1::JSONB,$2::TEXT) AS ingest;",
+        "options": {
+          "queryReplacement": "={{ [JSON.stringify($json),$execution.id] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -80,
+        0
+      ],
+      "id": "46a15898-32a6-50d1-a1ca-e800b8edbd08",
+      "name": "02 - INGEST CORE",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.ingest?.ok !== true) throw new Error(`INGEST_FAILED:${$json.ingest?.code ?? 'UNKNOWN'}`); return {json:$json};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ],
+      "id": "2f3fbcee-1c16-5973-b98b-08ec8d0a0df9",
+      "name": "03 - ASSERT INGEST"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "00 - WHATSAPP TRIGGER": {
+      "main": [
+        [
+          {
+            "node": "01 - NORMALIZAR EVENTO META",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "01 - NORMALIZAR EVENTO META": {
+      "main": [
+        [
+          {
+            "node": "02 - INGEST CORE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 - INGEST CORE": {
+      "main": [
+        [
+          {
+            "node": "03 - ASSERT INGEST",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3a08c915-e268-54e3-85bc-e845b6bd3dbf",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

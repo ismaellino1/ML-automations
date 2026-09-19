@@ -1,0 +1,286 @@
+{
+  "release": "PROD_FINAL",
+  "generated": "2026-09-17",
+  "files": [
+    {
+      "path": ".env.example",
+      "sha256": "41c9f706442c48bab9ea3514f2d546a4943c340c15fba4d863825f25d55a9aaf",
+      "bytes": 261
+    },
+    {
+      "path": "README.md",
+      "sha256": "be0355e9b585ac327b1a23cfbf14175c602d9aee68d19278421d58d701e41b17",
+      "bytes": 1665
+    },
+    {
+      "path": "prompts/RESPONSE_ENGINE.md",
+      "sha256": "5bde8ba31a7a00666fcdec93a8d09d926c5e3847ba7fd77f3eaa28edb81f470e",
+      "bytes": 1425
+    },
+    {
+      "path": "prompts/CAMPAIGN_COPY.md",
+      "sha256": "0c8ce737df8967516e9ee1706a36f2d6d2d5b9e5206b436d5d53caca4c40f36a",
+      "bytes": 331
+    },
+    {
+      "path": "prompts/MEDIA_ANALYST.md",
+      "sha256": "1eee14c32ba3c460f335cdb3948f11ff23a30a07467871610586251a2cfa85c8",
+      "bytes": 1002
+    },
+    {
+      "path": "prompts/ORCHESTRATOR.md",
+      "sha256": "9194175566a4e7c7749ac2aa9a56c8a533a7487ef2ca656e1b422b787245c339",
+      "bytes": 3845
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "sha256": "7cd2d927b77408449d905f0cd1f8b783f9e9d1e757bd39fadc1c4d6c049fa6a5",
+      "bytes": 506
+    },
+    {
+      "path": "docs/SECURITY.md",
+      "sha256": "254824f76e6717c400792f4e0bb1712af05302d27ff8f388470754ddbffcf09b",
+      "bytes": 500
+    },
+    {
+      "path": "docs/TEST_MATRIX.md",
+      "sha256": "cbdb7cbe0f13312bb30b2f527f33cbb79675648a719a6f5a1f5154d6be851f8d",
+      "bytes": 828
+    },
+    {
+      "path": "docs/OPERATIONS.md",
+      "sha256": "6c1179d237beaf04d12292d330c21409ec5918109e68c9d5e8fc024e94310fad",
+      "bytes": 433
+    },
+    {
+      "path": "schemas/orchestrator.schema.json",
+      "sha256": "77cb591e9cc29d18828e82a43c25f0d7914424addafd2f3a67f256fb3ea44a53",
+      "bytes": 3003
+    },
+    {
+      "path": "schemas/response.schema.json",
+      "sha256": "ddbb336d8ec302055e257e1ff4f3bf2c519625baf3f3a15d25d6ca23673c85a5",
+      "bytes": 468
+    },
+    {
+      "path": "schemas/control-plane.openapi.yaml",
+      "sha256": "88ed0f8f86c9449f7f880c92ff32ad13416aecc9b8864c1a3c9e95d6fd49d6ea",
+      "bytes": 674
+    },
+    {
+      "path": "scripts/validate_workflows.py",
+      "sha256": "18097f38a6694bf99f13ac942ce28d29517ff7eceaa8467369e39262074a6ab8",
+      "bytes": 897
+    },
+    {
+      "path": "n8n/01_ML_INBOUND_GATEWAY_PROD_FINAL.json",
+      "sha256": "bf3522a3e7a48cea950dfc1c1dddca9c367556582920a78821e803333de2d49a",
+      "bytes": 5429
+    },
+    {
+      "path": "n8n/02_ML_MEDIA_WORKER_PROD_FINAL.json",
+      "sha256": "7cf0b86c6765180e2886ed8d90bdb05b4c1f2a09c04137cc9a4231ee607af58b",
+      "bytes": 4858
+    },
+    {
+      "path": "n8n/04_ML_WHATSAPP_DELIVERY_PROD_FINAL.json",
+      "sha256": "9eeaaba5091bff750335c351d10daf79d524a100bad3eea0ad04be0256cc5531",
+      "bytes": 5344
+    },
+    {
+      "path": "n8n/08_ML_CONTROL_PLANE_PROD_FINAL.json",
+      "sha256": "458fb243b6bd048ce0652ef399acd2ef89f5d722e7ac28c898d44ff9dc0a2b54",
+      "bytes": 3350
+    },
+    {
+      "path": "n8n/09_ML_KNOWLEDGE_INGESTION_PROD_FINAL.json",
+      "sha256": "59f1932a9dd962fe9dac5ae10cc1adc5f1e8040895536da44a2203d67016c752",
+      "bytes": 2554
+    },
+    {
+      "path": "n8n/99_ML_OBSERVABILITY_PROD_FINAL.json",
+      "sha256": "028b1858a13aab3dbc534b678eeae6991c55e9493780d5013296c8ce4e991d7c",
+      "bytes": 2471
+    },
+    {
+      "path": "n8n/07_ML_AUTOMATION_SCHEDULER_PROD_FINAL.json",
+      "sha256": "8276a86dc4bfe8c523316778d5e1f8e62bb7e2421c42018b3d49bf912d38b136",
+      "bytes": 5153
+    },
+    {
+      "path": "n8n/05_ML_GOOGLE_CALENDAR_PROD_FINAL.json",
+      "sha256": "2ad524d094c732c92f1420e2bf10c657af95522da240e61f9e5f15d7f47e4d77",
+      "bytes": 20389
+    },
+    {
+      "path": "n8n/03_ML_CONVERSATION_WORKER_PROD_FINAL.json",
+      "sha256": "0ee61a33b8575c857f98616d033c3601e3a4f477708d9204c5764867d3d8733b",
+      "bytes": 20970
+    },
+    {
+      "path": "n8n/06_ML_CAMPAIGN_ENGINE_PROD_FINAL.json",
+      "sha256": "5c6a504a0aee00bfc7a06bd8d9e2c44c4979bf3937d575579945e6479ee929e3",
+      "bytes": 3242
+    },
+    {
+      "path": "supabase/migrations/045_marketing_campaigns.sql",
+      "sha256": "a61b2866a63d33cfab6cef5e877fcdcd275296aefee28f993256e783639d2ace",
+      "bytes": 5129
+    },
+    {
+      "path": "supabase/migrations/048_runtime_v5_adapters.sql",
+      "sha256": "0eb0752906c5bf8c8c09208b80b568b29202edb8e4875888071b621fb802ab30",
+      "bytes": 12028
+    },
+    {
+      "path": "supabase/migrations/049_observability.sql",
+      "sha256": "556519a8ecca7f9590bcd513409e21ad4ff34be8d8bc59bdadeb98ffb02b12cb",
+      "bytes": 1205
+    },
+    {
+      "path": "supabase/migrations/044_catalog_knowledge_media.sql",
+      "sha256": "e0fff688927d799c5629c4ef45572cfe7006fbdb472b5c58af15dca67b122c1d",
+      "bytes": 6999
+    },
+    {
+      "path": "supabase/migrations/046_automation_reminders.sql",
+      "sha256": "ed859ce6329e7640a49ea916e7e98e190d221f6ac8d4259991ab0cfca82ce4e1",
+      "bytes": 2671
+    },
+    {
+      "path": "supabase/migrations/047_rbac_control_plane.sql",
+      "sha256": "cbcf5388ca9760de54440ed21958a87646d8d9841b4d7fee290850f295a6f1aa",
+      "bytes": 5122
+    },
+    {
+      "path": "supabase/migrations/050_security_rls.sql",
+      "sha256": "f7c8a1e8a6bf4d45b5c23f604e751a460fe995847855a79347b3b42eb358ce82",
+      "bytes": 1464
+    },
+    {
+      "path": "supabase/migrations/043_prod_job_queue.sql",
+      "sha256": "747a507fe05edf1a4cdc221bcadb14c525fb1aa14f4542023f8020184e624069",
+      "bytes": 6836
+    },
+    {
+      "path": "supabase/tests/001_job_queue.sql",
+      "sha256": "130f21fc902a6a599816e62c26cca993b3d0e23ba4fdfa4c6f079d3b65cfb919",
+      "bytes": 208
+    },
+    {
+      "path": "supabase/tests/002_security_notes.sql",
+      "sha256": "3cb88d98f2fdea1ed0f2d3d82f6223356c24c5a442a66213480fcfa92a54df5c",
+      "bytes": 226
+    },
+    {
+      "path": "supabase/functions/control-api/index.ts",
+      "sha256": "be51db77305aed2f5ea4f6449bbc57743b1d9f87b708cc1d6d0582021f8cbf5d",
+      "bytes": 1547
+    },
+    {
+      "path": "supabase/functions/media-processor/index.ts",
+      "sha256": "8c42eb8383c36b22ae0e6a920e2580b5f001663f96033ac455f8fed1c2a44252",
+      "bytes": 3921
+    },
+    {
+      "path": "apps/ml-console/vite.config.ts",
+      "sha256": "7b34ad64c4749e9ba9e65138ef3b9b718e7c0722319eae1faf96c8bb0b9a49e4",
+      "bytes": 129
+    },
+    {
+      "path": "apps/ml-console/tsconfig.json",
+      "sha256": "4d4a7e6d49b675b999a7abc6a11e7a40ccf3f1bcf903aee4b2b9964a8659ab58",
+      "bytes": 516
+    },
+    {
+      "path": "apps/ml-console/package.json",
+      "sha256": "99a2819f814da9456e21478d123e33cb4a516772b08288043f64104375ceae10",
+      "bytes": 524
+    },
+    {
+      "path": "apps/ml-console/index.html",
+      "sha256": "a9ce0d32a0bb09203cce23c12c141da1eee447d89df7dc8cb2491fab5d041901",
+      "bytes": 249
+    },
+    {
+      "path": "apps/ml-console/src/main.tsx",
+      "sha256": "b77924d584f55996c1404275a9fb5388d2e835fcac11e890c1e4fbf4802f3c3b",
+      "bytes": 1303
+    },
+    {
+      "path": "apps/ml-console/src/styles.css",
+      "sha256": "abfb304440aa84d1ceb38ef3dbce56248b1192a10f5278def2a96fe342ecd97a",
+      "bytes": 922
+    },
+    {
+      "path": "apps/ml-console/src/components/Layout.tsx",
+      "sha256": "979df11085ba3cf588f7bbc007cd58cf7c9a99329126ecebcb0f3af548b46ba7",
+      "bytes": 532
+    },
+    {
+      "path": "apps/ml-console/src/components/ResourcePage.tsx",
+      "sha256": "a594d346687c4d9ed09e08499b96d8bea920e98e32df45c2d349166f6d3fc077",
+      "bytes": 595
+    },
+    {
+      "path": "apps/ml-console/src/lib/supabase.ts",
+      "sha256": "a4009e09763118ee538319fdc0ee212373f39255640270f730bd18944cd315b4",
+      "bytes": 772
+    },
+    {
+      "path": "apps/ml-console/src/pages/Equipe.tsx",
+      "sha256": "e154fb7ca7164c5d84561ffcb766aaf981936a99d66f9a70c522fb5b2b4db682",
+      "bytes": 212
+    },
+    {
+      "path": "apps/ml-console/src/pages/Config.tsx",
+      "sha256": "505cf43a03961efb813cd1d43a3cf81dd1f20cce4cd7f1ecbe1eb11a109103e6",
+      "bytes": 206
+    },
+    {
+      "path": "apps/ml-console/src/pages/Automacoes.tsx",
+      "sha256": "324a626eae8411606b028c4f41684e2c43776398b7cf5027f066d3503a6cb87c",
+      "bytes": 212
+    },
+    {
+      "path": "apps/ml-console/src/pages/Produtos.tsx",
+      "sha256": "561642e4df6c1ddd891dc3e294abc6c11bbecebfee335facb3e33a9ffeab57ff",
+      "bytes": 223
+    },
+    {
+      "path": "apps/ml-console/src/pages/Knowledge.tsx",
+      "sha256": "cf3acdee1527a5387ac49f2a87228827b516e4906529473b5ea4feb79881d773",
+      "bytes": 214
+    },
+    {
+      "path": "apps/ml-console/src/pages/Servicos.tsx",
+      "sha256": "c4a273269b9af0f6fc5369462dcc5395432a03d9a1a4bb013a3529d5e4e11088",
+      "bytes": 213
+    },
+    {
+      "path": "apps/ml-console/src/pages/Incidentes.tsx",
+      "sha256": "a690f2faf73fdcb354040e449c1ab7f15e9e7306f4a5fcc9e66479475b6cf9ff",
+      "bytes": 221
+    },
+    {
+      "path": "apps/ml-console/src/pages/Clientes.tsx",
+      "sha256": "debb6e7eba22fa409e15cb6567a1d55207d08764cd2153c88bf323f2da7a23ff",
+      "bytes": 222
+    },
+    {
+      "path": "apps/ml-console/src/pages/Agenda.tsx",
+      "sha256": "33c06a6abac30ffbe15eff9e1eca6732c297a484acaf095ea4d3b6b9e9646578",
+      "bytes": 223
+    },
+    {
+      "path": "apps/ml-console/src/pages/Campanhas.tsx",
+      "sha256": "12e00473bcd788a0f2cd744c132be667793f8291ce6f9ffae44c53ef479cde58",
+      "bytes": 221
+    },
+    {
+      "path": "apps/ml-console/src/pages/Dashboard.tsx",
+      "sha256": "afd3528fb99ff329031b064dcb02c020ac14377185858d71de4da6ac83406f71",
+      "bytes": 234
+    }
+  ]
+}

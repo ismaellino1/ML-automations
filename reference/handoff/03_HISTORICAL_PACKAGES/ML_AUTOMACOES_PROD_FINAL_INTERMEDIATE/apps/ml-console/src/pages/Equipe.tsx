@@ -1,0 +1,1 @@
+import {ResourcePage} from "../components/ResourcePage"; export default function Equipe(){return <ResourcePage title="Equipe" description="Profissionais, escalas, permissões, calendários e disponibilidade."/>}

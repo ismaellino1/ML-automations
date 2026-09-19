@@ -1,0 +1,173 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "BUSINESS_ACTION",
+        "CONVERSATION",
+        "NEED_INFORMATION",
+        "HUMAN_HANDOFF"
+      ]
+    },
+    "intent": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "SEARCH_AVAILABILITY",
+        "SELECT_SLOT",
+        "CANCEL_APPOINTMENT",
+        "RESCHEDULE_APPOINTMENT",
+        "REBOOK_APPOINTMENT",
+        "GET_APPOINTMENT",
+        "JOIN_WAITLIST",
+        "LEAVE_WAITLIST",
+        "UPDATE_MARKETING_PREFERENCE",
+        "NONE"
+      ]
+    },
+    "arguments": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "service_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "professional_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "period": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "MORNING",
+            "AFTERNOON",
+            "EVENING",
+            null
+          ]
+        },
+        "time": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "time_from": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "time_until": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "option_number": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "appointment_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "allow_professional_fallback": {
+          "type": "boolean"
+        },
+        "marketing_opt_in": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "waitlist_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date_until": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "slot_offer_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "service_id",
+        "professional_id",
+        "date",
+        "period",
+        "time",
+        "time_from",
+        "time_until",
+        "option_number",
+        "appointment_id",
+        "allow_professional_fallback",
+        "marketing_opt_in",
+        "waitlist_id",
+        "date_until",
+        "slot_offer_id"
+      ]
+    },
+    "missing_information": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "customer_meaning": {
+      "type": "string"
+    },
+    "direct_response": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  },
+  "required": [
+    "kind",
+    "intent",
+    "action",
+    "arguments",
+    "missing_information",
+    "customer_meaning",
+    "direct_response",
+    "confidence"
+  ]
+}

@@ -1,0 +1,1 @@
+import {ResourcePage} from "../components/ResourcePage"; export default function Automacoes(){return <ResourcePage title="Automacoes" description="Lembretes, waitlist, reativação, quiet hours e políticas."/>}

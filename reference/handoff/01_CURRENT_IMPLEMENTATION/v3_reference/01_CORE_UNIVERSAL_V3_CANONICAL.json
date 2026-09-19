@@ -1,0 +1,1802 @@
+{
+  "name": "01 - CORE - UNIVERSAL V3",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        -224
+      ],
+      "id": "604716bf-8cf5-44ce-adbf-b272d9abaf89",
+      "name": "00 - DEV TRIGGER"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const now = new Date();\n\nreturn {\n  json: {\n    dev: true,\n\n    business_code: 'BARB001',\n\n    channel: {\n      type: 'WHATSAPP',\n      provider: 'META'\n    },\n\n    customer: {\n      external_user_id: 'DEV_CUSTOMER_001'\n    },\n\n    message: {\n      external_message_id:\n        `DEV_${Date.now()}`,\n\n      idempotency_key:\n        `DEV_IN_${Date.now()}`,\n\n      type: 'text',\n\n      text: 'mn vê aí se tem corte amanhã de tarde com o pedro',\n\n      provider_timestamp:\n        now.toISOString(),\n\n      raw_payload: {\n        source: 'DEV'\n      }\n    },\n\n    received_at:\n      now.toISOString()\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        -224
+      ],
+      "id": "807b18a5-f4f6-4cb4-b0ff-485baf808dd4",
+      "name": "00A - DEV INPUT"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const input = $json;\n\nconst messageType =\n  String(\n    input.message?.type\n    ?? 'text'\n  ).toLowerCase();\n\nconst text =\n  input.message?.text\n  ?? null;\n\nreturn {\n  json: {\n\n    runtime: {\n      mode:\n        input.dev === true\n          ? 'DEV'\n          : 'PRODUCTION',\n\n      received_at:\n        input.received_at\n        ?? new Date().toISOString()\n    },\n\n    business_ref: {\n      code:\n        input.business_code\n        ?? null\n    },\n\n    channel: {\n      type:\n        input.channel?.type\n        ?? 'WHATSAPP',\n\n      provider:\n        input.channel?.provider\n        ?? 'META',\n\n      external_channel_id:\n        input.channel?.external_channel_id\n        ?? null\n    },\n\n    customer_ref: {\n      external_user_id:\n        input.customer?.external_user_id\n        ?? null,\n\n      profile_name:\n        input.customer?.profile_name\n        ?? null\n    },\n\n    message: {\n\n      external_message_id:\n        input.message?.external_message_id\n        ?? null,\n\n      idempotency_key:\n        input.message?.idempotency_key\n        ?? null,\n\n      reply_to_external_message_id:\n        input.message?.reply_to_external_message_id\n        ?? null,\n\n      type:\n        messageType,\n\n      text,\n\n      normalized_text:\n        typeof text === 'string'\n          ? text.trim()\n          : null,\n\n      interaction:\n        input.message?.interaction\n        ?? null,\n\n      provider_timestamp:\n        input.message?.provider_timestamp\n        ?? input.received_at\n        ?? null,\n\n      raw_payload:\n        input.message?.raw_payload\n        ?? {},\n\n      media: {\n        id:\n          input.message?.media?.id\n          ?? null,\n\n        mime_type:\n          input.message?.media?.mime_type\n          ?? null,\n\n        url:\n          input.message?.media?.url\n          ?? null,\n\n        caption:\n          input.message?.media?.caption\n          ?? null,\n\n        filename:\n          input.message?.media?.filename\n          ?? null\n      }\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f30b284c-fbaf-41a7-b397-ce36a49ccc5c",
+      "name": "01 - NORMALIZAR ENTRADA"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.prepare_assistant_turn(\n    $1::TEXT,\n    $2::TEXT,\n    $3::TEXT,\n    $4::TEXT,\n    $5::TEXT,\n    $6::TEXT,\n    $7::TEXT,\n    $8::TEXT,\n    $9::JSONB,\n    $10::TIMESTAMPTZ,\n    $11::INTEGER\n) AS context;",
+        "options": {
+          "queryReplacement": "={{ [\n  $('01 - NORMALIZAR ENTRADA').item.json.business_ref.code,\n\n  $('01 - NORMALIZAR ENTRADA').item.json.channel.type,\n\n  $('01 - NORMALIZAR ENTRADA').item.json.channel.provider,\n\n  $('01 - NORMALIZAR ENTRADA').item.json.customer_ref.external_user_id,\n\n  $('01 - NORMALIZAR ENTRADA').item.json.message.idempotency_key,\n\n  $('01 - NORMALIZAR ENTRADA').item.json.message.external_message_id,\n\n  $('01 - NORMALIZAR ENTRADA').item.json.message.type,\n\n  $('01 - NORMALIZAR ENTRADA').item.json.message.normalized_text,\n\n  JSON.stringify(\n    $('01 - NORMALIZAR ENTRADA').item.json.message.raw_payload ?? {}\n  ),\n\n  $('01 - NORMALIZAR ENTRADA').item.json.message.provider_timestamp,\n\n  12\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        192,
+        0
+      ],
+      "id": "0ab6d3cc-1c12-4b4c-a9dd-1aa73b031eec",
+      "name": "02 - CARREGAR CONTEXTO CORE",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const context =\n  $('02 - CARREGAR CONTEXTO CORE').item.json.context ?? {};\n\nconst input =\n  $('01 - NORMALIZAR ENTRADA').item.json;\n\nconst message =\n  input.message ?? {};\n\n\n// ======================================================\n// CONTEXTO LIMPO PARA A IA V3\n// ======================================================\n\nconst aiContext =\n  JSON.parse(\n    JSON.stringify(context)\n  );\n\nif (\n  aiContext.conversation?.context\n  && typeof aiContext.conversation.context === 'object'\n) {\n  delete aiContext.conversation.context.booking;\n  delete aiContext.conversation.context.last_analysis;\n}\n\n\n// ======================================================\n// PROMPT OFICIAL — IA ORQUESTRADORA V3\n// ======================================================\n\nconst systemInstruction = `\nVocê é a IA ORQUESTRADORA da ML Automações.\n\nVocê atua como atendente inteligente da empresa e como camada de interpretação\nentre o cliente e o Business Core.\n\nSua função é:\n\n1. entender qualquer mensagem enviada pelo cliente;\n2. interpretar corretamente a intenção, mesmo com erros, gírias ou contexto implícito;\n3. decidir se existe uma ação operacional a ser executada;\n4. estruturar essa ação para o Business Core;\n5. quando NÃO houver necessidade de ação operacional, conversar diretamente com o cliente;\n6. quando faltar informação, fazer a pergunta necessária;\n7. quando necessário, encaminhar para atendimento humano.\n\nVocê pode conversar naturalmente com o cliente.\n\nPorém, você NÃO executa operações empresariais diretamente.\n\nVocê NÃO:\n- cria horários;\n- inventa disponibilidade;\n- inventa preços;\n- inventa serviços;\n- inventa profissionais;\n- cria agendamentos;\n- cancela agendamentos;\n- remarca agendamentos;\n- altera regras empresariais;\n- confirma uma operação que o Business Core ainda não confirmou.\n\nO Business Core é a fonte de verdade operacional.\n\n=====================================================\nPRINCÍPIO CENTRAL\n=====================================================\n\nA linguagem humana pode variar infinitamente.\n\nO Business Core trabalha com um conjunto pequeno e estruturado de ações.\n\nSua função é converter a variedade da linguagem humana para esse conjunto\nde ações ou, quando nenhuma ação for necessária, responder diretamente.\n\nNão trate o cliente como se estivesse usando um menu.\n\nEntenda o significado real da mensagem.\n\n=====================================================\nROBUSTEZ LINGUÍSTICA\n=====================================================\n\nVocê deve compreender mensagens mesmo quando houver:\n\n- erros ortográficos;\n- palavras escritas foneticamente;\n- letras trocadas;\n- letras faltando;\n- palavras incompletas;\n- palavras coladas;\n- ausência de acentos;\n- acentos incorretos;\n- ausência de pontuação;\n- pontuação incorreta;\n- frases sem vírgulas;\n- mensagens digitadas rapidamente;\n- abreviações;\n- contrações;\n- autocorretor incorreto;\n- gírias;\n- regionalismos;\n- linguagem coloquial;\n- expressões locais;\n- mensagens muito curtas;\n- mensagens fragmentadas;\n- respostas de uma palavra;\n- respostas de um número;\n- frases sem sujeito explícito;\n- referências ao que foi dito anteriormente;\n- referências indiretas a uma opção;\n- números usados como horários;\n- números usados como opções.\n\nNão exija português formal.\n\nNão corrija o cliente.\n\nNão comente os erros de escrita do cliente.\n\nInterprete a intenção.\n\nExemplos de equivalência linguística:\n\n\"amanhã\"\n\"amanha\"\n\"amnh\"\n\n\"depois do almoço\"\n\"dps do almoço\"\n\"dps almoço\"\n\"pela tarde\"\n\n\"com Pedro\"\n\"c Pedro\"\n\"c o pedro\"\n\"pedro msm\"\n\n\"duas e meia\"\n\"2 e meia\"\n\"2:30\"\n\"14:30\"\n\n\"quanto custa\"\n\"qnt custa\"\n\"quanto é\"\n\"fica qnt\"\n\"qual valor\"\n\n\"quero o segundo\"\n\"o 2\"\n\"segunda opção\"\n\"esse segundo aí\"\n\nEsses exemplos demonstram princípios.\nNão limite sua compreensão a essas frases.\n\n=====================================================\nAMBIGUIDADE\n=====================================================\n\nSer tolerante com erros não significa inventar interpretações.\n\nUse:\n- mensagem atual;\n- contexto da conversa;\n- oferta ativa;\n- agendamentos existentes;\n- serviço anteriormente citado;\n- profissional anteriormente citado;\n- data anteriormente informada;\n- horário anteriormente informado.\n\nQuando uma interpretação for claramente mais provável, interprete normalmente.\n\nQuando houver duas ou mais interpretações materialmente diferentes\ne nenhuma for suficientemente segura:\n\nkind = NEED_INFORMATION\n\nUse missing_information para indicar o que precisa ser esclarecido.\n\nExemplo:\n\nSe o cliente responde:\n\n\"2\"\n\ne existe uma active_offer com opção 2,\nprovavelmente significa a opção 2.\n\nSe não existe oferta ativa e \"2\" pode significar horário,\nquantidade ou outra coisa, não invente.\n\n=====================================================\nIDIOMA\n=====================================================\n\nVocê deve compreender diferentes idiomas.\n\nIdentifique o idioma predominante da mensagem do cliente.\n\nPode haver mistura de idiomas.\n\nExemplos:\n\n\"quiero cortar mañana con Pedro\"\n\"I want a haircut tomorrow\"\n\"tem horário tomorrow?\"\n\"quero corte mañana à tarde\"\n\nInterprete normalmente.\n\nQuando você responder diretamente ao cliente,\nresponda preferencialmente no idioma predominante utilizado por ele.\n\nPreserve:\n- nomes próprios;\n- nomes de profissionais;\n- nomes de serviços;\n- nomes da empresa;\n- marcas.\n\n=====================================================\nESTILO DE COMUNICAÇÃO\n=====================================================\n\nQuando houver direct_response, adapte a comunicação usando sinais\nLINGUÍSTICOS OBSERVÁVEIS do cliente.\n\nVocê pode considerar:\n- idioma;\n- formalidade;\n- informalidade;\n- tamanho das mensagens;\n- objetividade;\n- uso de abreviações;\n- uso de gírias;\n- uso de emojis;\n- maneira de perguntar;\n- ritmo da conversa;\n- perfil de comunicação previamente armazenado.\n\nTambém respeite os limites da marca presentes em context.brand:\n\n- brand_personality;\n- default_treatment;\n- minimum_formality;\n- maximum_informality;\n- allow_slang;\n- emoji_max_per_message;\n- response_guidelines;\n- greeting_text;\n- farewell_text.\n\nA identidade da empresa tem prioridade sobre uma imitação exagerada do cliente.\n\nNão copie erros ortográficos apenas para parecer com o cliente.\n\nVocê pode ser informal sem escrever errado.\n\nNão faça inferências sobre:\n- idade;\n- gênero;\n- classe social;\n- escolaridade;\n- religião;\n- etnia;\n- saúde;\n- orientação sexual;\n- personalidade psicológica;\n- outras características sensíveis.\n\nAdapte apenas a comunicação.\n\n=====================================================\nCONTEXTO DA CONVERSA\n=====================================================\n\nNunca trate uma mensagem como isolada quando houver contexto.\n\nUse tudo que estiver disponível em:\n\ncontext.conversation\ncontext.active_offer\ncontext.appointments\ncontext.services\ncontext.professionals\ncontext.customer\ncontext.brand\ncontext.settings\ncontext.clock\n\nQuando houver histórico ou resumo de conversa disponível,\nuse também essas informações.\n\nNão pergunte novamente algo já conhecido.\n\nExemplo:\n\nCliente:\n\"quero cortar amanhã\"\n\nDepois:\n\"com Pedro\"\n\nA segunda mensagem complementa a primeira.\n\nOutro:\n\nSistema apresentou:\n\n1. 14:00 com João\n2. 14:30 com Pedro\n\nCliente:\n\"o do Pedro\"\n\nIsso pode significar SELECT_SLOT da opção 2.\n\n=====================================================\nDATA E HORA\n=====================================================\n\nUse:\n\ncontext.clock.local_date\n\ncomo data atual oficial.\n\nUse:\n\ncontext.clock.local_time\n\ncomo horário atual oficial.\n\nUse:\n\ncontext.clock.timezone\n\ncomo timezone oficial.\n\nNunca use uma data atual presumida fora do contexto.\n\nResolva expressões como:\n\n- hoje;\n- amanhã;\n- depois de amanhã;\n- sábado;\n- próxima sexta;\n- semana que vem;\n- de manhã;\n- depois do almoço;\n- à tarde;\n- à noite;\n- umas 2;\n- 2 e meia;\n- perto das 3;\n- depois das 14;\n- antes das 16.\n\nDatas devem ser retornadas em:\n\nYYYY-MM-DD\n\nHorários devem ser retornados em:\n\nHH:MM\n\nUse formato de 24 horas nos campos estruturados.\n\nExemplos:\n\n\"2 da tarde\"\n→ 14:00\n\n\"2 e meia da tarde\"\n→ 14:30\n\n\"umas 2 da tarde\"\n→ aproximadamente 14:00\n\n=====================================================\nSERVIÇOS E PROFISSIONAIS\n=====================================================\n\nUse SOMENTE:\n\ncontext.services\ncontext.professionals\n\ncomo fonte válida.\n\nNunca invente IDs.\n\nQuando identificar um serviço:\nretorne exatamente o service_id existente.\n\nQuando identificar um profissional:\nretorne exatamente o professional_id existente.\n\nSe o cliente não especificar profissional:\nprofessional_id = null\n\nSe disser:\n\n\"qualquer um\"\n\"tanto faz\"\n\"quem tiver\"\n\"pode ser qualquer barbeiro\"\n\nprofessional_id = null\n\nSe disser:\n\n\"quero Pedro, mas se não tiver pode ser João\"\n\"prefiro Pedro, mas pode ser qualquer um\"\n\nuse o profissional preferido quando identificável e:\n\nallow_professional_fallback = true\n\n=====================================================\nTIPOS DE RESULTADO\n=====================================================\n\nkind deve ser exatamente um destes:\n\nBUSINESS_ACTION\nCONVERSATION\nNEED_INFORMATION\nHUMAN_HANDOFF\n\n=====================================================\nBUSINESS_ACTION\n=====================================================\n\nUse quando existe algo operacional que o Business Core precisa consultar\nou modificar.\n\nExemplos:\n\n- procurar disponibilidade;\n- selecionar horário;\n- consultar agendamento;\n- cancelar agendamento;\n- remarcar agendamento ativo;\n- procurar novo horário para agendamento cancelado;\n- entrar em lista de espera.\n\nPara BUSINESS_ACTION:\n\ndirect_response = null\n\nO Business Core executará a operação primeiro.\n\nDepois outro componente produzirá a resposta final usando o resultado real.\n\n=====================================================\nCONVERSATION\n=====================================================\n\nUse quando nenhuma operação empresarial precisa ser executada.\n\nExemplos:\n\n- saudação;\n- agradecimento;\n- conversa comum;\n- preço de serviço;\n- duração de serviço;\n- serviços oferecidos;\n- informações sobre profissionais;\n- informações disponíveis sobre a empresa;\n- dúvidas que podem ser respondidas usando o contexto;\n- dúvidas gerais relacionadas ao serviço da empresa;\n- orientação geral sobre cabelo;\n- orientação geral sobre barba;\n- cuidados de manutenção;\n- styling;\n- tipos de produtos;\n- diferenças entre produtos;\n- rotina básica de cuidados.\n\nPara CONVERSATION:\n\naction = NONE\n\nE:\n\ndirect_response\n\ndeve conter a resposta pronta para ser enviada ao cliente.\n\nCLASSIFICAÇÃO DE INTENT EM CONVERSAS:\n\nUse SERVICE_INFO apenas para informações sobre serviços reais da empresa,\ncomo preço, duração, descrição, disponibilidade conceitual ou profissionais\nque executam determinado serviço.\n\nUse BUSINESS_INFO para informações institucionais da empresa.\n\nPara orientações gerais, cuidados com cabelo, barba, styling, categorias de\nprodutos, recomendações gerais e outras conversas consultivas que não\ncorrespondam a um intent específico do schema:\n\nintent = OTHER\n\nNão force uma conversa para SERVICE_INFO apenas porque o assunto está\nrelacionado ao ramo da empresa.\n\n=====================================================\nATENDIMENTO CONSULTIVO\n=====================================================\n\nQuando for apropriado ao negócio, você pode oferecer orientação útil.\n\nNo contexto de uma barbearia, isso pode incluir:\n\n- cuidados gerais com cabelo;\n- cuidados gerais com barba;\n- frequência de lavagem;\n- condicionamento;\n- hidratação;\n- finalização;\n- diferenças gerais entre pomada, cera, clay, gel etc.;\n- escolha de acabamento;\n- manutenção de penteados;\n- cuidados básicos após corte;\n- sugestões gerais de produtos por característica desejada.\n\nSe existirem produtos reais cadastrados no contexto da empresa,\npriorize esses produtos quando forem adequados.\n\nNunca invente:\n- produto vendido pela empresa;\n- estoque;\n- preço;\n- promoção;\n- disponibilidade comercial.\n\nVocê pode falar de categorias gerais de produtos quando necessário.\n\nNão transforme orientação geral em diagnóstico médico.\n\nSe a mensagem envolver sinais que podem indicar problema médico,\nlesões, infecção, reação importante, queda de cabelo anormal ou outra\nquestão de saúde:\n\n- não diagnostique;\n- dê orientação geral prudente;\n- recomende avaliação profissional apropriada quando necessário.\n\n=====================================================\nNEED_INFORMATION\n=====================================================\n\nUse quando a intenção está clara, mas falta informação indispensável.\n\nExemplo:\n\n\"quero marcar\"\n\nPode faltar:\n- serviço;\n- data.\n\nNesse caso:\n\nkind = NEED_INFORMATION\naction = NONE\n\nmissing_information deve conter apenas o que falta.\n\ndirect_response deve conter UMA pergunta natural,\ncurta e contextual para obter a informação necessária.\n\nNão faça várias perguntas desnecessárias de uma vez.\n\nNão pergunte profissional se ele não for necessário.\n\nNão pergunte horário exato quando um período já for suficiente.\n\n=====================================================\nHUMAN_HANDOFF\n=====================================================\n\nUse quando:\n\n- cliente pedir uma pessoa;\n- cliente pedir atendente;\n- cliente pedir atendimento humano;\n- cliente pedir para falar com alguém;\n- contexto determinar que automação deve parar;\n- houver situação que exija intervenção humana.\n\nUse:\n\nkind = HUMAN_HANDOFF\n\naction = NONE\n\ndirect_response deve conter uma mensagem curta e natural informando\no encaminhamento.\n\n=====================================================\nAÇÕES OPERACIONAIS PERMITIDAS\n=====================================================\n\nAs únicas ações disponíveis são:\n\nSEARCH_AVAILABILITY\nSELECT_SLOT\nCANCEL_APPOINTMENT\nRESCHEDULE_APPOINTMENT\nREBOOK_APPOINTMENT\nGET_APPOINTMENT\nJOIN_WAITLIST\nNONE\n\nNunca invente outra action.\n\nA diferença entre RESCHEDULE_APPOINTMENT e REBOOK_APPOINTMENT\né obrigatória:\n\nRESCHEDULE_APPOINTMENT\n= alterar um agendamento que ainda está ativo.\n\nREBOOK_APPOINTMENT\n= procurar um novo horário para substituir um agendamento que já está CANCELLED.\n\nNunca trate um appointment CANCELLED como RESCHEDULE_APPOINTMENT.\n\n=====================================================\nSEARCH_AVAILABILITY\n=====================================================\n\nUse quando o cliente quer procurar horários para um novo atendimento\nou para uma busca normal de disponibilidade que NÃO esteja vinculada\ndeterministicamente a um appointment CANCELLED.\n\nExemplos:\n\n\"quero cortar amanhã\"\n\"tem com Pedro sexta?\"\n\"vê um horário pra barba\"\n\"tem alguma coisa depois das 3?\"\n\nNormalmente precisamos de:\n\n- serviço;\n- data.\n\nProfissional é opcional.\n\nHorário exato é opcional.\n\nPeríodo pode ser suficiente.\n\nPedido inicial de agendamento normalmente vira:\n\nSEARCH_AVAILABILITY\n\nNão confirme agendamento diretamente.\n\nNÃO use SEARCH_AVAILABILITY quando o cliente estiver claramente\ntentando substituir um appointment CANCELLED identificado no contexto.\n\nNesse caso use:\n\nintent = REBOOK_APPOINTMENT\naction = REBOOK_APPOINTMENT\n\nMesmo que a mensagem use palavras como:\n\n\"buscar\"\n\"procurar\"\n\"ver horário\"\n\"ver horários\"\n\"outro horário\"\n\"de novo\"\n\na referência clara a um appointment CANCELLED tem prioridade.\n\n=====================================================\nSELECT_SLOT\n=====================================================\n\nUse quando:\n\ncontext.active_offer\n\nexiste e o cliente escolhe uma das opções.\n\nA escolha pode vir por:\n\n- número;\n- horário;\n- profissional;\n- posição;\n- referência contextual.\n\nExemplos:\n\n\"2\"\n\"o segundo\"\n\"14h30\"\n\"o das duas\"\n\"o do Pedro\"\n\"aquele primeiro\"\n\"pode ser o último\"\n\nUse SOMENTE opções existentes em:\n\ncontext.active_offer.options\n\nNunca invente option_number.\n\nQuando apenas uma opção corresponder claramente,\nretorne esse option_number.\n\n=====================================================\nCANCEL_APPOINTMENT\n=====================================================\n\nUse quando o cliente deseja cancelar agendamento existente.\n\nUse:\n\ncontext.appointments\n\npara identificar o compromisso.\n\nExemplos:\n\n\"cancela meu horário de amanhã\"\n\"não vou conseguir ir\"\n\"pode cancelar o das 14h\"\n\nSe houver mais de um compromisso plausível e não for possível determinar\nqual deles deve ser cancelado:\n\nNEED_INFORMATION\n\n=====================================================\nRESCHEDULE_APPOINTMENT\n=====================================================\n\nUse SOMENTE quando o cliente quer alterar um agendamento que ainda está ativo.\n\nExemplos:\n\n\"muda meu horário pra sábado\"\n\"não posso 2 horas, tem mais tarde?\"\n\"joga meu corte pra amanhã\"\n\nIdentifique o appointment usando:\n\ncontext.appointments\n\nO appointment escolhido NÃO pode estar com status CANCELLED.\n\nSe o appointment estiver CANCELLED,\nNÃO use RESCHEDULE_APPOINTMENT.\n\nNesse caso, se o cliente deseja outro horário para substituir aquele\nagendamento cancelado, use REBOOK_APPOINTMENT.\n\nPara RESCHEDULE_APPOINTMENT:\n\nkind = BUSINESS_ACTION\nintent = RESCHEDULE_APPOINTMENT\naction = RESCHEDULE_APPOINTMENT\n\narguments.appointment_id\ndeve identificar o appointment ativo.\n\nNunca confirme o novo horário sem resultado do Business Core.\n\n=====================================================\nREBOOK_APPOINTMENT\n=====================================================\n\nUse quando existe um agendamento com status CANCELLED\ne o cliente quer procurar um novo horário para substituí-lo.\n\nREBOOK_APPOINTMENT é diferente de RESCHEDULE_APPOINTMENT.\n\nRESCHEDULE_APPOINTMENT:\no appointment original ainda está ativo.\n\nREBOOK_APPOINTMENT:\no appointment original já está CANCELLED.\n\nUse REBOOK_APPOINTMENT especialmente quando:\n\n- o profissional cancelou;\n- a empresa cancelou;\n- o cliente recebeu uma mensagem informando cancelamento;\n- o cliente quer outro horário depois desse cancelamento;\n- o cliente pede para ver outros horários;\n- o cliente pede para procurar novamente;\n- o cliente fala do \"agendamento cancelado\";\n- o cliente quer substituir um appointment já cancelado.\n\nUse como fontes:\n\ncontext.appointments\n\ne, quando existir:\n\ncontext.conversation.context.rebooking\n\nSe existir:\n\ncontext.conversation.context.rebooking.source_appointment_id\n\nuse esse ID quando ele corresponder ao appointment cancelado\nao qual o cliente está se referindo.\n\nO appointment_id é a principal referência determinística.\n\nPara REBOOK_APPOINTMENT:\n\nkind = BUSINESS_ACTION\nintent = REBOOK_APPOINTMENT\naction = REBOOK_APPOINTMENT\n\narguments.appointment_id\ndeve conter o ID do appointment CANCELLED.\n\nNão é obrigatório repetir:\n\nservice_id\nprofessional_id\ndate\nperiod\ntime\ntime_from\ntime_until\n\nquando essas informações puderem ser recuperadas deterministicamente\npelo Business Core a partir do appointment cancelado.\n\nNesses casos, esses campos podem ser null.\n\nO Business Core recuperará:\n\n- serviços;\n- profissional;\n- dados originais;\n- regras;\n- disponibilidade;\n\na partir do appointment_id.\n\nExemplo:\n\nCliente:\n\"procura de novo os horários desse agendamento cancelado\"\n\nExiste no contexto um appointment CANCELLED claramente relacionado.\n\nRetorne:\n\nkind = BUSINESS_ACTION\nintent = REBOOK_APPOINTMENT\naction = REBOOK_APPOINTMENT\n\narguments.appointment_id =\nID daquele appointment cancelado.\n\nNÃO use SEARCH_AVAILABILITY.\n\nNÃO use RESCHEDULE_APPOINTMENT.\n\nOutro exemplo:\n\nCliente recebeu aviso de cancelamento pelo profissional.\n\nDepois diz:\n\n\"vê outro horário pra mim\"\n\nSe o contexto deixar claro qual appointment foi cancelado:\n\nREBOOK_APPOINTMENT\n\nOutro:\n\n\"tem outro horário pro corte que foi cancelado?\"\n\nREBOOK_APPOINTMENT\n\nOutro:\n\n\"procura dnv\"\n\nSe o contexto imediatamente anterior for o reagendamento\nde um appointment cancelado e a referência for inequívoca:\n\nREBOOK_APPOINTMENT\n\nA existência de referência clara a um appointment CANCELLED\ntem prioridade sobre palavras genéricas como:\n\n\"procurar\"\n\"buscar\"\n\"horário\"\n\"disponibilidade\"\n\"remarcar\"\n\"mudar\"\n\nNão classifique mecanicamente pela palavra usada pelo cliente.\nClassifique pela situação operacional real.\n\nSe houver mais de um appointment CANCELLED plausível\ne não for possível identificar qual deles o cliente quer substituir:\n\nkind = NEED_INFORMATION\naction = NONE\n\nmissing_information = [\"APPOINTMENT_REFERENCE\"]\n\ndirect_response deve fazer uma pergunta curta para identificar\nqual agendamento cancelado o cliente quer substituir.\n\n=====================================================\nGET_APPOINTMENT\n=====================================================\n\nUse quando o cliente deseja consultar um agendamento existente.\n\nExemplos:\n\n\"que horas ficou meu corte?\"\n\"tenho horário marcado?\"\n\"qual dia marquei?\"\n\n=====================================================\nJOIN_WAITLIST\n=====================================================\n\nUse quando o cliente deseja entrar em lista de espera\ne isso estiver disponível nas regras empresariais.\n\n=====================================================\nNONE\n=====================================================\n\nUse quando nenhuma operação empresarial precisa ser executada.\n\n=====================================================\nINFORMAÇÃO FALTANTE\n=====================================================\n\nmissing_information pode conter:\n\nSERVICE\nDATE\nTIME\nPROFESSIONAL\nSLOT_OPTION\nAPPOINTMENT_REFERENCE\nCLARIFICATION\n\nInclua somente informações realmente necessárias.\n\n=====================================================\nCONTINUIDADE E CORREÇÕES DO CLIENTE\n=====================================================\n\nO cliente pode corrigir apenas parte do pedido.\n\nExemplo:\n\n\"quero amanhã à tarde\"\n\nDepois:\n\n\"na verdade sexta\"\n\nPreserve serviço/profissional já conhecidos e altere apenas a data.\n\nOutro:\n\n\"com Pedro\"\n\nDepois:\n\n\"pode ser João msm\"\n\nAltere somente profissional.\n\nOutro:\n\n\"14h\"\n\nDepois:\n\n\"melhor 15\"\n\nAltere somente horário.\n\nA mensagem mais recente pode corrigir informações anteriores.\n\nTambém preserve continuidade de fluxos de reagendamento.\n\nSe:\n\ncontext.conversation.context.rebooking\n\nexistir e estiver relacionado a um appointment CANCELLED,\nmensagens subsequentes como:\n\n\"procura de novo\"\n\"outro horário\"\n\"tem mais?\"\n\"vê aí\"\n\"quero outro\"\n\npodem estar continuando o REBOOK_APPOINTMENT.\n\nUse o contexto para decidir.\n\nNão converta automaticamente para SEARCH_AVAILABILITY\nse já existe uma referência inequívoca ao appointment cancelado.\n\n=====================================================\nCONVERSA INFORMACIONAL\n=====================================================\n\nQuando a resposta já está disponível no contexto,\nnão execute ação operacional sem necessidade.\n\nExemplos:\n\n\"quanto é o corte?\"\n\"qnt fica barba\"\n\"quanto tempo demora corte e barba?\"\n\"quem faz barba?\"\n\"quais serviços vocês têm?\"\n\nUse:\n\nkind = CONVERSATION\naction = NONE\n\nE responda diretamente em:\n\ndirect_response\n\n=====================================================\nCONVERSA COMUM\n=====================================================\n\nMensagens como:\n\n\"oi\"\n\"boa noite\"\n\"valeu\"\n\"obrigado\"\n\"blz\"\n\"fechou\"\n\"show\"\n\"kkkk\"\n\nnormalmente devem ser:\n\nCONVERSATION\nNONE\n\ncom uma resposta natural em direct_response quando fizer sentido.\n\n=====================================================\nDIRECT_RESPONSE\n=====================================================\n\ndirect_response representa uma mensagem pronta para o cliente.\n\nUse direct_response quando:\n\nkind = CONVERSATION\nkind = NEED_INFORMATION\nkind = HUMAN_HANDOFF\n\nPara:\n\nkind = BUSINESS_ACTION\n\ndirect_response deve ser null.\n\nIsso é importante porque ações operacionais precisam passar pelo Business Core\nantes de o cliente receber uma confirmação.\n\nA direct_response deve:\n\n- ser natural;\n- respeitar o idioma do cliente;\n- respeitar contexto;\n- respeitar a marca;\n- adaptar nível de formalidade;\n- não parecer um template;\n- não mencionar processos internos;\n- ser adequada para WhatsApp.\n\n=====================================================\nCUSTOMER_MEANING\n=====================================================\n\ncustomer_meaning deve resumir objetivamente o significado da mensagem.\n\nExemplo:\n\nMensagem:\n\n\"mn ve ai se pedro tem algo amnh dps do almoço\"\n\ncustomer_meaning:\n\n\"Cliente quer verificar disponibilidade com Pedro amanhã à tarde.\"\n\n=====================================================\nCONFIANÇA\n=====================================================\n\nconfidence representa a confiança na interpretação completa.\n\n0 = extremamente incerto.\n1 = praticamente inequívoco.\n\nNão dê confiança alta quando houver ambiguidade relevante.\n\nQuando houver dúvida material:\n\nNEED_INFORMATION\n\n=====================================================\nSEGURANÇA OPERACIONAL\n=====================================================\n\nVocê interpreta.\n\nO Business Core decide se a operação realmente pode acontecer.\n\nNão assuma:\n\n- disponibilidade;\n- validade de oferta;\n- permissão de cancelamento;\n- permissão de remarcação;\n- validade de um reagendamento;\n- sucesso do agendamento;\n- sucesso de uma operação externa;\n- sincronização com calendário.\n\nMesmo em REBOOK_APPOINTMENT:\n\nvocê apenas identifica qual appointment CANCELLED\no cliente quer substituir.\n\nO Business Core deve validar se esse rebooking é permitido.\n\n=====================================================\nSAÍDA\n=====================================================\n\nRetorne SOMENTE o objeto definido pelo JSON Schema.\n\nNão use Markdown.\n\nNão escreva explicações fora do objeto.\n\nNão acrescente campos fora do schema.\n`;\n\n\n// ======================================================\n// PAYLOAD PARA O MODELO\n// ======================================================\n\nreturn {\n  json: {\n\n    orchestration_request: {\n\n      system_instruction:\n        systemInstruction,\n\n      input: {\n\n        message: {\n          type:\n            message.type\n            ?? 'text',\n\n          text:\n            message.normalized_text\n            ?? message.text\n            ?? null,\n\n          media:\n            message.media\n            ?? null\n        },\n\n        context:\n          aiContext\n      }\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        -16
+      ],
+      "id": "8fabad35-2d35-4122-83b9-5d0d858ff68c",
+      "name": "03 - PREPARAR IA ORQUESTRADORA"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.6-luna",
+          "mode": "list",
+          "cachedResultName": "GPT-5.6-LUNA"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "={{ $json.orchestration_request.system_instruction }}"
+            },
+            {
+              "content": "={{ JSON.stringify($json.orchestration_request.input) }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_schema",
+              "verbosity": "low",
+              "name": "ml_orchestrator_v3",
+              "schema": "{\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"properties\": {\n    \"kind\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"BUSINESS_ACTION\",\n        \"CONVERSATION\",\n        \"NEED_INFORMATION\",\n        \"HUMAN_HANDOFF\"\n      ]\n    },\n    \"intent\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"BOOK_APPOINTMENT\",\n        \"CHECK_AVAILABILITY\",\n        \"SELECT_SLOT\",\n        \"SERVICE_INFO\",\n        \"BUSINESS_INFO\",\n        \"CANCEL_APPOINTMENT\",\n        \"RESCHEDULE_APPOINTMENT\",\n        \"REBOOK_APPOINTMENT\",\n        \"GET_APPOINTMENT\",\n        \"JOIN_WAITLIST\",\n        \"GREETING\",\n        \"SMALL_TALK\",\n        \"HUMAN_HANDOFF\",\n        \"OTHER\"\n      ]\n    },\n    \"action\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"SEARCH_AVAILABILITY\",\n        \"SELECT_SLOT\",\n        \"CANCEL_APPOINTMENT\",\n        \"RESCHEDULE_APPOINTMENT\",\n        \"REBOOK_APPOINTMENT\",\n        \"GET_APPOINTMENT\",\n        \"JOIN_WAITLIST\",\n        \"NONE\"\n      ]\n    },\n    \"arguments\": {\n      \"type\": \"object\",\n      \"additionalProperties\": false,\n      \"properties\": {\n        \"service_id\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"professional_id\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"date\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"period\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ],\n          \"enum\": [\n            \"MORNING\",\n            \"AFTERNOON\",\n            \"EVENING\",\n            null\n          ]\n        },\n        \"time\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"time_from\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"time_until\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"option_number\": {\n          \"type\": [\n            \"integer\",\n            \"null\"\n          ],\n          \"minimum\": 1\n        },\n        \"appointment_id\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"allow_professional_fallback\": {\n          \"type\": \"boolean\"\n        }\n      },\n      \"required\": [\n        \"service_id\",\n        \"professional_id\",\n        \"date\",\n        \"period\",\n        \"time\",\n        \"time_from\",\n        \"time_until\",\n        \"option_number\",\n        \"appointment_id\",\n        \"allow_professional_fallback\"\n      ]\n    },\n    \"missing_information\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"enum\": [\n          \"SERVICE\",\n          \"DATE\",\n          \"TIME\",\n          \"PROFESSIONAL\",\n          \"SLOT_OPTION\",\n          \"APPOINTMENT_REFERENCE\",\n          \"CLARIFICATION\"\n        ]\n      }\n    },\n    \"customer_meaning\": {\n      \"type\": \"string\"\n    },\n    \"direct_response\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"confidence\": {\n      \"type\": \"number\",\n      \"minimum\": 0,\n      \"maximum\": 1\n    }\n  },\n  \"required\": [\n    \"kind\",\n    \"intent\",\n    \"action\",\n    \"arguments\",\n    \"missing_information\",\n    \"customer_meaning\",\n    \"direct_response\",\n    \"confidence\"\n  ]\n}",
+              "description": "Interpreta a mensagem do cliente e retorna somente o comando estruturado da V3 para o Business Core.",
+              "strict": true
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        1136,
+        80
+      ],
+      "id": "a2d60e1a-4856-4244-9209-d3ce5336fc15",
+      "name": "04 - IA ORQUESTRADORA",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const envelope = $json;\n\nconst context =\n  $('02 - CARREGAR CONTEXTO CORE').item.json.context ?? {};\n\n\n// ======================================================\n// EXTRAIR COMANDO DA IA / COMANDO ESTRUTURADO\n// ======================================================\n\nlet command =\n  envelope.structured_command\n  ?? envelope.output?.[0]?.content\n      ?.find(item => item.type === 'output_text')\n      ?.text\n  ?? null;\n\nif (typeof command === 'string') {\n  try {\n    command = JSON.parse(command);\n  } catch {\n    command = null;\n  }\n}\n\n\n// ======================================================\n// ESTRUTURAS DE VALIDAÇÃO\n// ======================================================\n\nconst errors = [];\nconst warnings = [];\n\nif (!command || typeof command !== 'object') {\n  errors.push('INVALID_AI_OUTPUT');\n}\n\n\n// ======================================================\n// HELPERS\n// ======================================================\n\nconst uuidRegex =\n  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;\n\n\n// ======================================================\n// TIPOS E AÇÕES PERMITIDOS\n// ======================================================\n\nconst allowedKinds = new Set([\n  'BUSINESS_ACTION',\n  'CONVERSATION',\n  'NEED_INFORMATION',\n  'HUMAN_HANDOFF'\n]);\n\nconst allowedActions = new Set([\n  'SEARCH_AVAILABILITY',\n  'SELECT_SLOT',\n  'CANCEL_APPOINTMENT',\n  'RESCHEDULE_APPOINTMENT',\n  'REBOOK_APPOINTMENT',\n  'GET_APPOINTMENT',\n  'JOIN_WAITLIST',\n  'NONE'\n]);\n\nconst kind =\n  command?.kind ?? null;\n\nconst action =\n  command?.action ?? 'NONE';\n\n\nif (\n  kind\n  && !allowedKinds.has(kind)\n) {\n  errors.push('INVALID_KIND');\n}\n\n\nif (\n  action\n  && !allowedActions.has(action)\n) {\n  errors.push('INVALID_ACTION');\n}\n\n\n// ======================================================\n// DIRECT RESPONSE\n// ======================================================\n\nlet directResponse =\n  typeof command?.direct_response === 'string'\n    ? command.direct_response.trim()\n    : null;\n\nif (directResponse === '') {\n  directResponse = null;\n}\n\n\n// BUSINESS_ACTION nunca pode responder antes do CORE.\nif (\n  kind === 'BUSINESS_ACTION'\n  && directResponse !== null\n) {\n  warnings.push(\n    'DIRECT_RESPONSE_IGNORED_FOR_BUSINESS_ACTION'\n  );\n\n  directResponse = null;\n}\n\n\n// Conversa / informação faltante / handoff\n// precisam possuir mensagem pronta.\nif (\n  (\n    kind === 'CONVERSATION'\n    || kind === 'NEED_INFORMATION'\n    || kind === 'HUMAN_HANDOFF'\n  )\n  && !directResponse\n) {\n  errors.push('DIRECT_RESPONSE_REQUIRED');\n}\n\n\n// Tudo que não for BUSINESS_ACTION\n// deve usar action NONE.\nif (\n  kind !== 'BUSINESS_ACTION'\n  && action !== 'NONE'\n) {\n  errors.push(\n    'NON_BUSINESS_KIND_MUST_USE_NONE'\n  );\n}\n\n\n// BUSINESS_ACTION deve ter ação real.\nif (\n  kind === 'BUSINESS_ACTION'\n  && action === 'NONE'\n) {\n  errors.push(\n    'BUSINESS_ACTION_REQUIRES_ACTION'\n  );\n}\n\n\n// ======================================================\n// CATÁLOGO REAL\n// ======================================================\n\nconst services =\n  Array.isArray(context.services)\n    ? context.services\n    : [];\n\nconst professionals =\n  Array.isArray(context.professionals)\n    ? context.professionals\n    : [];\n\nconst serviceId =\n  command?.arguments?.service_id\n  ?? null;\n\nconst professionalId =\n  command?.arguments?.professional_id\n  ?? null;\n\n\n// ======================================================\n// VALIDAR SERVICE_ID\n// ======================================================\n\nlet validatedService = null;\n\nif (serviceId) {\n\n  validatedService =\n    services.find(\n      service =>\n        service.service_id === serviceId\n    )\n    ?? null;\n\n  if (!validatedService) {\n    errors.push('UNKNOWN_SERVICE_ID');\n  }\n}\n\n\n// ======================================================\n// VALIDAR PROFESSIONAL_ID\n// ======================================================\n\nlet validatedProfessional = null;\n\nif (professionalId) {\n\n  validatedProfessional =\n    professionals.find(\n      professional =>\n        professional.professional_id\n        === professionalId\n    )\n    ?? null;\n\n  if (!validatedProfessional) {\n    errors.push('UNKNOWN_PROFESSIONAL_ID');\n  }\n}\n\n\n// ======================================================\n// SERVIÇO × PROFISSIONAL\n// ======================================================\n\nif (\n  validatedService\n  && validatedProfessional\n) {\n\n  const professionalAllowed =\n    Array.isArray(\n      validatedService.professionals\n    )\n    && validatedService.professionals.some(\n      professional =>\n        professional.professional_id\n        === validatedProfessional.professional_id\n    );\n\n  if (!professionalAllowed) {\n    errors.push(\n      'PROFESSIONAL_DOES_NOT_PERFORM_SERVICE'\n    );\n  }\n}\n\n\n// ======================================================\n// DATA\n// ======================================================\n\nconst requestedDate =\n  command?.arguments?.date\n  ?? null;\n\nconst localDate =\n  context.clock?.local_date\n  ?? null;\n\n\nif (\n  requestedDate\n  && !/^\\d{4}-\\d{2}-\\d{2}$/.test(\n    requestedDate\n  )\n) {\n  errors.push('INVALID_DATE_FORMAT');\n}\n\n\nif (\n  action === 'SEARCH_AVAILABILITY'\n  && requestedDate\n  && localDate\n  && requestedDate < localDate\n) {\n  errors.push('DATE_IN_PAST');\n}\n\n\n// ======================================================\n// SEARCH_AVAILABILITY\n// ======================================================\n\nif (\n  kind === 'BUSINESS_ACTION'\n  && action === 'SEARCH_AVAILABILITY'\n) {\n\n  if (!serviceId) {\n    errors.push(\n      'SEARCH_REQUIRES_SERVICE'\n    );\n  }\n\n  if (!requestedDate) {\n    errors.push(\n      'SEARCH_REQUIRES_DATE'\n    );\n  }\n}\n\n\n// ======================================================\n// SELECT_SLOT\n// ======================================================\n\nif (\n  kind === 'BUSINESS_ACTION'\n  && action === 'SELECT_SLOT'\n) {\n\n  const offer =\n    context.active_offer ?? null;\n\n  const optionNumber =\n    command?.arguments?.option_number\n    ?? null;\n\n\n  if (!offer) {\n    errors.push(\n      'NO_ACTIVE_SLOT_OFFER'\n    );\n  }\n\n\n  if (!optionNumber) {\n    errors.push(\n      'SELECT_SLOT_REQUIRES_OPTION'\n    );\n  }\n\n\n  if (\n    offer\n    && optionNumber\n  ) {\n\n    const optionExists =\n      Array.isArray(offer.options)\n      && offer.options.some(\n        option =>\n          option.option_number\n          === optionNumber\n      );\n\n    if (!optionExists) {\n      errors.push(\n        'UNKNOWN_SLOT_OPTION'\n      );\n    }\n  }\n}\n\n\n// ======================================================\n// REBOOK_APPOINTMENT\n// ======================================================\n\nif (\n  kind === 'BUSINESS_ACTION'\n  && action === 'REBOOK_APPOINTMENT'\n) {\n\n  const appointmentId =\n    command?.arguments?.appointment_id\n    ?? null;\n\n\n  if (!appointmentId) {\n\n    errors.push(\n      'REBOOK_REQUIRES_APPOINTMENT'\n    );\n\n  } else if (\n    typeof appointmentId !== 'string'\n    || !uuidRegex.test(appointmentId)\n  ) {\n\n    errors.push(\n      'INVALID_APPOINTMENT_ID'\n    );\n  }\n}\n\n\n// ======================================================\n// CANCEL_APPOINTMENT\n//\n// Aqui validamos apenas formato.\n// Autorização, dono do appointment e regras de horário\n// continuam sendo responsabilidade do CORE.\n// ======================================================\n\nif (\n  kind === 'BUSINESS_ACTION'\n  && action === 'CANCEL_APPOINTMENT'\n) {\n\n  const appointmentId =\n    command?.arguments?.appointment_id\n    ?? null;\n\n\n  if (!appointmentId) {\n\n    errors.push(\n      'CANCEL_REQUIRES_APPOINTMENT'\n    );\n\n  } else if (\n    typeof appointmentId !== 'string'\n    || !uuidRegex.test(appointmentId)\n  ) {\n\n    errors.push(\n      'INVALID_APPOINTMENT_ID'\n    );\n  }\n}\n\n\n// ======================================================\n// RESCHEDULE_APPOINTMENT\n//\n// Ainda não executamos o motor completo aqui,\n// mas já protegemos appointment_id.\n// ======================================================\n\nif (\n  kind === 'BUSINESS_ACTION'\n  && action === 'RESCHEDULE_APPOINTMENT'\n) {\n\n  const appointmentId =\n    command?.arguments?.appointment_id\n    ?? null;\n\n\n  if (!appointmentId) {\n\n    errors.push(\n      'RESCHEDULE_REQUIRES_APPOINTMENT'\n    );\n\n  } else if (\n    typeof appointmentId !== 'string'\n    || !uuidRegex.test(appointmentId)\n  ) {\n\n    errors.push(\n      'INVALID_APPOINTMENT_ID'\n    );\n  }\n}\n\n\n// ======================================================\n// GET_APPOINTMENT\n// ======================================================\n\nif (\n  kind === 'BUSINESS_ACTION'\n  && action === 'GET_APPOINTMENT'\n) {\n\n  const appointmentId =\n    command?.arguments?.appointment_id\n    ?? null;\n\n\n  if (\n    appointmentId\n    && (\n      typeof appointmentId !== 'string'\n      || !uuidRegex.test(appointmentId)\n    )\n  ) {\n\n    errors.push(\n      'INVALID_APPOINTMENT_ID'\n    );\n  }\n}\n\n\n// ======================================================\n// MISSING INFORMATION\n// ======================================================\n\nconst missingInformation =\n  Array.isArray(\n    command?.missing_information\n  )\n    ? command.missing_information\n    : [];\n\n\nif (\n  kind === 'NEED_INFORMATION'\n  && missingInformation.length === 0\n) {\n  warnings.push(\n    'NEED_INFORMATION_WITHOUT_MISSING_FIELDS'\n  );\n}\n\n\n// ======================================================\n// CONFIANÇA\n// ======================================================\n\nconst confidence =\n  Number(\n    command?.confidence ?? 0\n  );\n\nconst minimumConfidence =\n  Number(\n    context.ai_settings\n      ?.minimum_intent_confidence\n    ?? 0.7\n  );\n\n\nif (\n  kind === 'BUSINESS_ACTION'\n  && confidence < minimumConfidence\n) {\n  errors.push(\n    'LOW_AI_CONFIDENCE_FOR_EXECUTION'\n  );\n}\n\n\n// ======================================================\n// DEFINIR ROTA ESTRUTURAL\n// ======================================================\n\nlet route = 'INVALID';\n\nif (errors.length === 0) {\n\n  if (kind === 'BUSINESS_ACTION') {\n\n    route = 'CORE';\n\n  } else if (\n    kind === 'CONVERSATION'\n    || kind === 'NEED_INFORMATION'\n  ) {\n\n    route = 'DIRECT_RESPONSE';\n\n  } else if (\n    kind === 'HUMAN_HANDOFF'\n  ) {\n\n    route = 'HUMAN_HANDOFF';\n\n  }\n}\n\n\n// ======================================================\n// OUTPUT CANÔNICO V3\n//\n// action_args porque \"arguments\" dá problema\n// em expressões do sandbox do n8n.\n// ======================================================\n\nreturn {\n  json: {\n\n    validated_command: {\n\n      valid:\n        errors.length === 0,\n\n      executable:\n        errors.length === 0\n        && route === 'CORE',\n\n      route,\n\n      kind,\n\n      intent:\n        command?.intent\n        ?? null,\n\n      action,\n\n      action_args: {\n        ...(command?.arguments ?? {}),\n\n        service_id:\n          validatedService?.service_id\n          ?? serviceId\n          ?? null,\n\n        professional_id:\n          validatedProfessional?.professional_id\n          ?? professionalId\n          ?? null\n      },\n\n      service:\n        validatedService,\n\n      professional:\n        validatedProfessional,\n\n      missing_information:\n        missingInformation,\n\n      customer_meaning:\n        command?.customer_meaning\n        ?? '',\n\n      direct_response:\n        directResponse,\n\n      confidence,\n\n      minimum_confidence:\n        minimumConfidence,\n\n      errors,\n\n      warnings\n    },\n\n    context\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1488,
+        -16
+      ],
+      "id": "ed5ad073-1c69-46e4-ad60-ce1ae20cff27",
+      "name": "05 - VALIDAR COMANDO IA"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.execute_assistant_action_v3(\n    $1::UUID,\n    $2::UUID,\n    $3::UUID,\n    $4::TEXT,\n    $5::TEXT,\n    $6::TEXT,\n    $7::JSONB\n) AS execution;",
+        "options": {
+          "queryReplacement": "={{ [\n  $json.context.business.id,\n\n  $json.context.conversation.id,\n\n  $json.context.customer.id,\n\n  $json.context.channel.channel_type,\n\n  $json.context.channel.provider,\n\n  $json.validated_command.action,\n\n  JSON.stringify(\n    $json.validated_command.action_args ?? {}\n  )\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1872,
+        -192
+      ],
+      "id": "92710aa4-7805-4ae9-8545-5154a2c96030",
+      "name": "06 - EXECUTAR AÇÃO CORE",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const execution =\n  $json.execution ?? {};\n\nconst validated =\n  $('05 - VALIDAR COMANDO IA').item.json.validated_command ?? {};\n\nconst context =\n  $('05 - VALIDAR COMANDO IA').item.json.context ?? {};\n\nconst originalInput =\n  $('01 - NORMALIZAR ENTRADA').item.json;\n\n\n// ======================================================\n// RESPONSE ENGINE V3\n// ======================================================\n\nconst systemInstruction = `\nVocê é o RESPONSE ENGINE da ML Automações.\n\nSua função é transformar fatos confirmados pelo Business Core em uma resposta\nhumana, natural, contextual, visualmente agradável e apropriada para WhatsApp.\n\nVocê NÃO decide regras empresariais.\nVocê NÃO executa operações.\nVocê NÃO altera fatos retornados pelo Business Core.\n\nO campo core_execution contém a verdade operacional desta resposta.\n\n=====================================================\nPRINCÍPIO CENTRAL\n=====================================================\n\nOs FATOS vêm do Business Core.\n\nA FORMA DE COMUNICAR vem de você.\n\nIsso significa que você pode variar:\n- linguagem;\n- estrutura;\n- grau de formalidade;\n- tamanho;\n- organização;\n- maneira de apresentar a informação;\n- uso moderado de emojis;\n- escolha das palavras;\n- tom de atendimento.\n\nMas você NUNCA pode alterar:\n- horários;\n- datas;\n- preços;\n- duração;\n- serviços;\n- profissionais;\n- status de agendamento;\n- disponibilidade;\n- regras empresariais;\n- resultado de operações.\n\n=====================================================\nVERDADE OPERACIONAL\n=====================================================\n\nVocê NUNCA pode:\n\n- inventar horários;\n- inventar disponibilidade;\n- inventar preços;\n- inventar serviços;\n- inventar profissionais;\n- inventar duração;\n- inventar promoções;\n- afirmar que um agendamento foi criado sem confirmação do CORE;\n- afirmar que algo foi cancelado sem confirmação do CORE;\n- afirmar que algo foi remarcado sem confirmação do CORE;\n- dizer que uma operação deu certo quando execution indicar erro;\n- alterar informações retornadas pelo Business Core.\n\nSe o CORE retornar:\n\nstatus = CONFIRMED\n\nvocê pode dizer que o horário ficou marcado ou confirmado.\n\nSe retornar apenas HOLD,\nnão diga que o agendamento está definitivamente confirmado.\n\n=====================================================\nPERSONALIZAÇÃO\n=====================================================\n\nA resposta deve parecer escrita especificamente para aquele cliente\nnaquele momento.\n\nUse sinais linguísticos observáveis como:\n\n- idioma;\n- formalidade;\n- informalidade;\n- objetividade;\n- tamanho das mensagens;\n- uso de abreviações;\n- uso de gírias;\n- uso de emojis;\n- ritmo da conversa;\n- maneira de fazer perguntas;\n- histórico recente;\n- perfil de comunicação armazenado.\n\nConsidere também:\n\ncustomer.communication_profile\nrecent_messages\noriginal_message\n\nNão imite erros ortográficos do cliente.\n\nVocê pode ser informal sem escrever errado.\n\nNão faça inferências sobre:\n- idade;\n- gênero;\n- classe social;\n- escolaridade;\n- religião;\n- etnia;\n- saúde;\n- personalidade psicológica;\n- outras características sensíveis.\n\nAdapte apenas aspectos observáveis da comunicação.\n\n=====================================================\nIDENTIDADE DA EMPRESA\n=====================================================\n\nRespeite os limites definidos em brand:\n\n- assistant_name;\n- brand_personality;\n- default_treatment;\n- minimum_formality;\n- maximum_informality;\n- allow_slang;\n- emoji_max_per_message;\n- response_guidelines;\n- greeting_text;\n- farewell_text.\n\nA adaptação ao cliente nunca deve destruir a identidade da empresa.\n\n=====================================================\nIDIOMA\n=====================================================\n\nResponda preferencialmente no mesmo idioma predominante utilizado pelo cliente.\n\nSe houver mistura de idiomas,\nuse o idioma predominante da conversa.\n\nPreserve nomes próprios, serviços, profissionais e marcas.\n\n=====================================================\nNATURALIDADE\n=====================================================\n\nNão use um texto fixo.\n\nNão responda sempre com a mesma estrutura.\n\nEvite parecer:\n- chatbot;\n- URA;\n- formulário;\n- menu eletrônico;\n- mensagem automática genérica.\n\nEvite introduções repetitivas como:\n\"Perfeito!\"\n\"Claro!\"\n\"Tem sim!\"\n\nquando não forem naturais naquele contexto.\n\nNão comece todas as mensagens da mesma maneira.\n\nVocê pode:\n- ser direto;\n- ser mais acolhedor;\n- resumir;\n- destacar a informação principal;\n- usar pequenas quebras de linha;\n- usar emoji quando adequado;\n- fazer uma pergunta curta ao final.\n\n=====================================================\nWHATSAPP E EXPERIÊNCIA VISUAL\n=====================================================\n\nA resposta será usada no WhatsApp.\n\nPriorize:\n- leitura rápida;\n- blocos curtos;\n- boa hierarquia;\n- poucas linhas;\n- clareza;\n- aparência organizada.\n\nEvite paredes de texto.\n\nUse quebras de linha quando melhorarem a leitura.\n\nEmojis podem ser usados como apoio visual,\nmas respeite brand.emoji_max_per_message.\n\nNão use excesso de símbolos decorativos.\n\n=====================================================\nHORÁRIOS DISPONÍVEIS / SLOT_OFFER\n=====================================================\n\nQuando:\n\ncore_execution.result_type = SLOT_OFFER\n\ne houver horários disponíveis:\n\nO sistema exibirá os horários através de uma interface interativa\ndo WhatsApp, usando botões ou lista.\n\nPortanto:\n\nNÃO liste todos os horários dentro do campo text.\n\nNÃO escreva:\n\"14h30, 14h45, 15h, 15h15...\"\n\nO sistema renderizará essas opções separadamente.\n\nSua função é escrever apenas uma introdução humana e contextual\npara aparecer acima dos botões ou da lista.\n\nA introdução pode mencionar, quando útil:\n\n- serviço;\n- profissional;\n- dia;\n- período;\n- preço;\n- duração;\n- alguma observação curta.\n\nDepois convide o cliente a escolher uma opção abaixo.\n\nExemplo informal:\n\n\"achei umas opções com o Pedro amanhã à tarde 👇\no corte fica R$ 30. vê qual horário encaixa melhor pra tu\"\n\nExemplo neutro:\n\n\"Separei algumas opções com o Pedro para amanhã à tarde.\nO corte fica R$ 30. Escolha abaixo o horário que funcionar melhor pra você 👇\"\n\nExemplo mais formal:\n\n\"Encontrei horários disponíveis com o Pedro para amanhã à tarde.\nSelecione abaixo o horário de sua preferência.\"\n\nEsses exemplos são apenas referências de estilo.\n\nNÃO os trate como templates.\n\nCrie uma mensagem adequada ao cliente atual.\n\n=====================================================\nQUANDO NÃO HOUVER HORÁRIOS\n=====================================================\n\nSe o Business Core indicar ausência de disponibilidade:\n\n- diga isso claramente;\n- não invente outras opções;\n- não invente outro dia;\n- não invente outro profissional.\n\nVocê pode sugerir naturalmente uma próxima ação,\ncomo procurar outro período, outro dia ou outro profissional,\nquando isso fizer sentido.\n\n=====================================================\nCONFIRMAÇÃO DE AGENDAMENTO\n=====================================================\n\nQuando o CORE retornar uma confirmação real:\n\n- informe serviço quando útil;\n- profissional quando útil;\n- data;\n- horário;\n- preço quando disponível.\n\nA resposta deve transmitir segurança sem parecer um recibo robótico.\n\nPode ser algo curto e visual.\n\nExemplo de lógica:\n\n\"Fechado ✂️\nSeu corte com Pedro ficou marcado para amanhã às 14h30.\nValor: R$ 30.\"\n\nMas adapte ao estilo do cliente.\n\nNão copie o exemplo literalmente.\n\n=====================================================\nERROS OPERACIONAIS\n=====================================================\n\nSe execution indicar erro:\n\n- não revele stack trace;\n- não revele códigos internos;\n- não mencione PostgreSQL;\n- não mencione n8n;\n- não mencione nomes de funções internas.\n\nExplique apenas o necessário em linguagem humana.\n\nQuando possível, ofereça um próximo passo útil.\n\n=====================================================\nCONTINUIDADE\n=====================================================\n\nResponda como continuação da conversa.\n\nNão recomece o atendimento.\n\nNão repita informações já conhecidas sem necessidade.\n\nUse:\n\n- original_message;\n- interpreted_command;\n- recent_messages;\n- customer;\n- brand;\n- core_execution;\n- clock.\n\nExemplo:\n\nSe o cliente já pediu corte com Pedro amanhã,\nnão precisa repetir uma explicação longa sobre serviço e profissional.\n\n=====================================================\nPREÇO E DURAÇÃO\n=====================================================\n\nMencione preço ou duração quando forem úteis para a decisão.\n\nNão é obrigatório repetir preço em todas as mensagens.\n\nEvite sobrecarregar a resposta com informação que o cliente não precisa naquele momento.\n\n=====================================================\nTAMANHO\n=====================================================\n\nPrefira mensagens curtas ou médias.\n\nWhatsApp não deve parecer um relatório.\n\nUse apenas o tamanho necessário para resolver aquele turno.\n\n=====================================================\nSAÍDA\n=====================================================\n\nRetorne SOMENTE o objeto estruturado solicitado pelo JSON Schema.\n\nO campo text deve conter exclusivamente a mensagem final destinada ao cliente.\n\nNão explique sua lógica interna.\n\nNão use Markdown técnico.\n\nNão acrescente campos fora do schema.\n`;\n\n\n// ======================================================\n// INPUT DO RESPONSE ENGINE\n// ======================================================\n\nreturn {\n  json: {\n\n    response_request: {\n\n      system_instruction:\n        systemInstruction,\n\n      input: {\n\n        original_message:\n          originalInput.message?.normalized_text\n          ?? originalInput.message?.text\n          ?? null,\n\n        interpreted_command:\n          validated,\n\n        core_execution:\n          execution,\n\n        recent_messages:\n          context.recent_messages\n          ?? [],\n\n        business: {\n\n          name:\n            context.business?.name\n            ?? null,\n\n          timezone:\n            context.business?.timezone\n            ?? null,\n\n          locale:\n            context.business?.locale\n            ?? 'pt-BR'\n        },\n\n        brand:\n          context.brand\n          ?? {},\n\n        customer: {\n\n          name:\n            context.customer?.name\n            ?? null,\n\n          communication_profile:\n            context.customer?.communication_profile\n            ?? {},\n\n          preferences:\n            context.customer?.preferences\n            ?? {}\n        },\n\n        clock:\n          context.clock\n          ?? {}\n      }\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2240,
+        -192
+      ],
+      "id": "9ebfbf5d-e55a-469e-8730-f43ef74f04f0",
+      "name": "07 - PREPARAR RESPONSE ENGINE"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.6-luna",
+          "mode": "list",
+          "cachedResultName": "GPT-5.6-LUNA"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "={{ $json.response_request.system_instruction }}"
+            },
+            {
+              "content": "={{ JSON.stringify($json.response_request.input) }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_schema",
+              "verbosity": "low",
+              "name": "ml_response_v3",
+              "schema": "{\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"properties\": {\n    \"text\": {\n      \"type\": \"string\"\n    },\n    \"response_type\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"SLOT_OPTIONS\",\n        \"CONFIRMATION\",\n        \"INFORMATION\",\n        \"QUESTION\",\n        \"ERROR\",\n        \"HANDOFF\",\n        \"GENERAL\"\n      ]\n    },\n    \"should_send\": {\n      \"type\": \"boolean\"\n    }\n  },\n  \"required\": [\n    \"text\",\n    \"response_type\",\n    \"should_send\"\n  ]\n}",
+              "description": "Gera a resposta final ao cliente usando somente os fatos confirmados pelo Business Core.",
+              "strict": true
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        2416,
+        -192
+      ],
+      "id": "3c5572d2-032a-4af0-ba33-8bb98489a731",
+      "name": "08 - RESPONSE ENGINE IA",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.validated_command.route }}",
+                    "rightValue": "CORE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "f9058d1c-04bb-47fc-9d17-056d146e1870"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "CORE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c4b43fe2-d355-46b4-be11-4278c29278e2",
+                    "leftValue": "={{ $json.validated_command.route }}",
+                    "rightValue": "DIRECT_RESPONSE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "DIRECT_RESPONSE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "0d48cc9a-d5ca-4c00-897a-b26faca42a8d",
+                    "leftValue": "={{ $json.validated_command.route }}",
+                    "rightValue": "HUMAN_HANDOFF",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "HUMAN_HANDOFF"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "4e8fbfe7-8186-4dac-9e29-af79ddc88ea0",
+                    "leftValue": "={{ $json.validated_command.route }}",
+                    "rightValue": "INVALID",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "INVALID"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1680,
+        -48
+      ],
+      "id": "5a53fd49-b290-428d-893e-b2c83f991b3f",
+      "name": "05A - ROTEAR RESULTADO DA IA"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $json;\n\nconst validated =\n  $('05 - VALIDAR COMANDO IA').item.json.validated_command ?? {};\n\nlet text = null;\nlet responseType = 'GENERAL';\nlet shouldSend = true;\nlet source = null;\n\n\n// ======================================================\n// CAMINHO 1 — RESPOSTA DIRETA DA IA ORQUESTRADORA\n// ======================================================\n\nif (\n  item.validated_command\n  && item.validated_command.direct_response\n) {\n\n  text =\n    item.validated_command.direct_response;\n\n  source =\n    'ORCHESTRATOR_DIRECT';\n\n\n  if (\n    item.validated_command.kind === 'NEED_INFORMATION'\n  ) {\n    responseType = 'QUESTION';\n\n  } else if (\n    item.validated_command.kind === 'HUMAN_HANDOFF'\n  ) {\n    responseType = 'HANDOFF';\n\n  } else {\n    responseType = 'INFORMATION';\n  }\n}\n\n\n// ======================================================\n// CAMINHO 2 — RESPOSTA GERADA PELO RESPONSE ENGINE\n// ======================================================\n\nelse {\n\n  let response =\n    item.output?.[0]?.content\n      ?.find(content => content.type === 'output_text')\n      ?.text\n    ?? null;\n\n\n  // Dependendo do node OpenAI, pode chegar\n  // como string JSON ou objeto já parseado.\n  if (typeof response === 'string') {\n\n    try {\n      response =\n        JSON.parse(response);\n    } catch {\n      text = response;\n      response = null;\n    }\n  }\n\n\n  if (\n    response\n    && typeof response === 'object'\n  ) {\n\n    text =\n      response.text\n      ?? null;\n\n    responseType =\n      response.response_type\n      ?? 'GENERAL';\n\n    shouldSend =\n      response.should_send !== false;\n  }\n\n\n  source =\n    'RESPONSE_ENGINE';\n}\n\n\n// ======================================================\n// SEGURANÇA\n// ======================================================\n\nif (\n  !text\n  || typeof text !== 'string'\n  || !text.trim()\n) {\n\n  return {\n    json: {\n      final_response: {\n        valid: false,\n        should_send: false,\n        text: null,\n        response_type: 'ERROR',\n        source,\n        error: 'EMPTY_FINAL_RESPONSE'\n      }\n    }\n  };\n}\n\n\n// ======================================================\n// SAÍDA CANÔNICA\n// ======================================================\n\nreturn {\n  json: {\n\n    final_response: {\n\n      valid: true,\n\n      should_send:\n        shouldSend,\n\n      text:\n        text.trim(),\n\n      response_type:\n        responseType,\n\n      source,\n\n      route:\n        validated.route\n        ?? null,\n\n      kind:\n        validated.kind\n        ?? null,\n\n      intent:\n        validated.intent\n        ?? null\n    }\n  }\n};;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2752,
+        -16
+      ],
+      "id": "e9dba6ae-c27c-4441-a2f6-4660923e8928",
+      "name": "09 - NORMALIZAR RESPOSTA FINAL"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{    $json.context?.ok !== true     ? 'ERROR'     : $json.context?.turn?.should_process === true       ? 'PROCESS'       : 'DUPLICATE' }}",
+                    "rightValue": "PROCESS",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0ad5343f-f274-4d28-bfdd-0d747fd2feb8"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "PROCESS"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "2a209d1f-32c7-49f3-8ab5-f0b6cbffa137",
+                    "leftValue": "={{    $json.context?.ok !== true     ? 'ERROR'     : $json.context?.turn?.should_process === true       ? 'PROCESS'       : 'DUPLICATE' }}",
+                    "rightValue": "DUPLICATE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "DUPLICATE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "f5a06f30-ea8c-4547-8881-1ccddc2b834a",
+                    "leftValue": "={{    $json.context?.ok !== true     ? 'ERROR'     : $json.context?.turn?.should_process === true       ? 'PROCESS'       : 'DUPLICATE' }}",
+                    "rightValue": "ERROR",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ERROR"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        384,
+        -16
+      ],
+      "id": "410f30e4-cec6-48ed-a075-6aeea210820f",
+      "name": "02A - CONTROLAR TURNO"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.finalize_assistant_turn(\n    $1::UUID,\n    $2::UUID,\n    $3::UUID,\n    $4::UUID,\n    $5::TEXT,\n    $6::TEXT,\n    $7::UUID,\n    $8::TEXT,\n    $9::NUMERIC,\n    $10::TEXT,\n    $11::TEXT,\n    $12::TEXT,\n    $13::TEXT,\n    $14::TEXT,\n    $15::TEXT,\n    $16::BOOLEAN\n) AS finalization;",
+        "options": {
+          "queryReplacement": "={{ [   $('02 - CARREGAR CONTEXTO CORE').item.json.context.business.id,    $('02 - CARREGAR CONTEXTO CORE').item.json.context.conversation.id,    $('02 - CARREGAR CONTEXTO CORE').item.json.context.customer.id,    $('02 - CARREGAR CONTEXTO CORE').item.json.context.customer.channel_id,    $('02 - CARREGAR CONTEXTO CORE').item.json.context.channel.channel_type,    $('02 - CARREGAR CONTEXTO CORE').item.json.context.channel.provider,    $('02 - CARREGAR CONTEXTO CORE').item.json.context.turn.message_id,    $('05 - VALIDAR COMANDO IA').item.json.validated_command.intent,    $('05 - VALIDAR COMANDO IA').item.json.validated_command.confidence,    $('05 - VALIDAR COMANDO IA').item.json.validated_command.kind,    $('05 - VALIDAR COMANDO IA').item.json.validated_command.route,    $('05 - VALIDAR COMANDO IA').item.json.validated_command.action,    $json.final_response.text,    $json.final_response.response_type,    $json.final_response.source,    $json.final_response.should_send ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        2944,
+        -16
+      ],
+      "id": "57a17081-909c-4b1c-87cb-9cd082371ffb",
+      "name": "10 - FINALIZAR TURNO",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{   $json.finalization?.ok !== true     ? 'ERROR'     : $json.finalization?.should_send === true       ? 'SEND'       : 'SKIP' }}",
+                    "rightValue": "SEND",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "65680243-ff79-4944-ba71-58d592a3f7f1"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "SEND"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "5974d052-ed50-4048-bc67-f5443b90b571",
+                    "leftValue": "={{   $json.finalization?.ok !== true     ? 'ERROR'     : $json.finalization?.should_send === true       ? 'SEND'       : 'SKIP' }}",
+                    "rightValue": "SKIP",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "SKIP"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "7d3b8620-aca9-4ac0-a43b-5658d59c89c4",
+                    "leftValue": "={{   $json.finalization?.ok !== true     ? 'ERROR'     : $json.finalization?.should_send === true       ? 'SEND'       : 'SKIP' }}",
+                    "rightValue": "ERROR",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ERROR"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        3136,
+        -32
+      ],
+      "id": "169cea94-64af-428b-9fb7-19bd082e296f",
+      "name": "10A - CONTROLAR ENVIO"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const finalization =\n  $('10 - FINALIZAR TURNO').item.json.finalization ?? {};\n\nconst context =\n  $('02 - CARREGAR CONTEXTO CORE').item.json.context ?? {};\n\nconst finalResponse =\n  $('09 - NORMALIZAR RESPOSTA FINAL').item.json.final_response ?? {};\n\n\n// ======================================================\n// DADOS BÁSICOS\n// ======================================================\n\nconst outboundMessageId =\n  finalization.outbound_message_id\n  ?? finalization.outbound?.message_id\n  ?? null;\n\nconst recipient =\n  context.customer?.external_user_id\n  ?? null;\n\nconst phoneNumberId =\n  context.channel?.external_channel_id\n  ?? null;\n\nconst text =\n  String(\n    finalResponse.text\n    ?? ''\n  ).trim();\n\nconst responseType =\n  finalResponse.response_type\n  ?? 'GENERAL';\n\n\nconst errors = [];\n\nif (!outboundMessageId) {\n  errors.push('OUTBOUND_MESSAGE_ID_MISSING');\n}\n\nif (!recipient) {\n  errors.push('RECIPIENT_MISSING');\n}\n\nif (!phoneNumberId) {\n  errors.push('PHONE_NUMBER_ID_MISSING');\n}\n\nif (!text) {\n  errors.push('TEXT_MISSING');\n}\n\n\n// ======================================================\n// HELPERS\n// ======================================================\n\nfunction money(value, currency = 'BRL') {\n\n  if (\n    value === null\n    || value === undefined\n    || Number.isNaN(Number(value))\n  ) {\n    return null;\n  }\n\n  try {\n\n    return new Intl.NumberFormat(\n      'pt-BR',\n      {\n        style: 'currency',\n        currency\n      }\n    ).format(Number(value));\n\n  } catch {\n\n    return `R$ ${Number(value).toFixed(2)}`;\n  }\n}\n\n\nfunction trimText(value, max) {\n\n  const str =\n    String(value ?? '').trim();\n\n  if (str.length <= max) {\n    return str;\n  }\n\n  return str.slice(0, max - 1).trim() + '…';\n}\n\n\n// ======================================================\n// PADRÃO: MENSAGEM DE TEXTO\n// ======================================================\n\nlet sendMode =\n  'TEXT';\n\nlet metaPayload = {\n\n  messaging_product:\n    'whatsapp',\n\n  recipient_type:\n    'individual',\n\n  to:\n    recipient,\n\n  type:\n    'text',\n\n  text: {\n\n    preview_url:\n      false,\n\n    body:\n      text\n  }\n};\n\n\nlet interactiveMetadata =\n  null;\n\n\n// ======================================================\n// SLOT OPTIONS\n// ======================================================\n\nif (\n  responseType === 'SLOT_OPTIONS'\n) {\n\n  let execution = {};\n\n  try {\n\n    execution =\n      $('06 - EXECUTAR AÇÃO CORE')\n        .item\n        .json\n        .execution\n      ?? {};\n\n  } catch {\n    execution = {};\n  }\n\n\n  const result =\n    execution.result ?? {};\n\n  const slots =\n    Array.isArray(result.slots)\n      ? result.slots\n      : [];\n\n  const slotOfferId =\n    result.slot_offer_id\n    ?? null;\n\n\n  if (\n    execution.ok === true\n    && slotOfferId\n    && slots.length > 0\n  ) {\n\n    // ==================================================\n    // ATÉ 3 OPÇÕES → BOTÕES DIRETOS\n    // ==================================================\n\n    if (slots.length <= 3) {\n\n      sendMode =\n        'INTERACTIVE_BUTTONS';\n\n\n      const buttons =\n        slots.map(\n          (slot, index) => {\n\n            const optionNumber =\n              index + 1;\n\n            const time =\n              slot.local_start\n              ?? '';\n\n            return {\n\n              type:\n                'reply',\n\n              reply: {\n\n                id:\n                  `slot|${slotOfferId}|${optionNumber}`,\n\n                title:\n                  trimText(\n                    time,\n                    20\n                  )\n              }\n            };\n          }\n        );\n\n\n      metaPayload = {\n\n        messaging_product:\n          'whatsapp',\n\n        recipient_type:\n          'individual',\n\n        to:\n          recipient,\n\n        type:\n          'interactive',\n\n        interactive: {\n\n          type:\n            'button',\n\n          body: {\n\n            text:\n              trimText(\n                text,\n                1024\n              )\n          },\n\n          action: {\n            buttons\n          }\n        }\n      };\n\n    }\n\n\n    // ==================================================\n    // 4+ OPÇÕES → LISTA INTERATIVA\n    // ==================================================\n\n    else {\n\n      sendMode =\n        'INTERACTIVE_LIST';\n\n\n      const rows =\n        slots\n          .slice(0, 10)\n          .map(\n            (slot, index) => {\n\n              const optionNumber =\n                index + 1;\n\n              const time =\n                slot.local_start\n                ?? `Opção ${optionNumber}`;\n\n              const professional =\n                slot.professional_name\n                ?? '';\n\n              const price =\n                money(\n                  slot.total_price,\n                  slot.currency\n                  ?? 'BRL'\n                );\n\n              const duration =\n                slot.total_service_minutes\n                  ? `${slot.total_service_minutes} min`\n                  : null;\n\n\n              const descriptionParts =\n                [\n                  professional,\n                  price,\n                  duration\n                ]\n                .filter(Boolean);\n\n\n              return {\n\n                id:\n                  `slot|${slotOfferId}|${optionNumber}`,\n\n                title:\n                  trimText(\n                    time,\n                    24\n                  ),\n\n                description:\n                  trimText(\n                    descriptionParts.join(' • '),\n                    72\n                  )\n              };\n            }\n          );\n\n\n      metaPayload = {\n\n        messaging_product:\n          'whatsapp',\n\n        recipient_type:\n          'individual',\n\n        to:\n          recipient,\n\n        type:\n          'interactive',\n\n        interactive: {\n\n          type:\n            'list',\n\n          header: {\n\n            type:\n              'text',\n\n            text:\n              'Horários disponíveis'\n          },\n\n          body: {\n\n            text:\n              trimText(\n                text,\n                1024\n              )\n          },\n\n          footer: {\n\n            text:\n              'Escolha o horário que funcionar melhor.'\n          },\n\n          action: {\n\n            button:\n              'Escolher horário',\n\n            sections: [\n\n              {\n\n                title:\n                  'Opções',\n\n                rows\n              }\n            ]\n          }\n        }\n      };\n\n    }\n\n\n    interactiveMetadata = {\n\n      type:\n        sendMode,\n\n      slot_offer_id:\n        slotOfferId,\n\n      option_count:\n        slots.length\n    };\n  }\n}\n\n\n// ======================================================\n// OUTPUT\n// ======================================================\n\nreturn {\n  json: {\n\n    whatsapp_send: {\n\n      valid:\n        errors.length === 0,\n\n      errors,\n\n      internal_message_id:\n        outboundMessageId,\n\n      provider:\n        context.channel?.provider\n        ?? 'META',\n\n      channel_type:\n        context.channel?.channel_type\n        ?? 'WHATSAPP',\n\n      phone_number_id:\n        phoneNumberId,\n\n      recipient,\n\n      send_mode:\n        sendMode,\n\n      text,\n\n      interactive:\n        interactiveMetadata,\n\n      meta_payload:\n        metaPayload\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3456,
+        -192
+      ],
+      "id": "e9f272d7-1f50-4e01-b8e6-f307b9199019",
+      "name": "11 - PREPARAR ENVIO WHATSAPP"
+    },
+    {
+      "parameters": {
+        "jsCode": "const send =\n  $('11 - PREPARAR ENVIO WHATSAPP').item.json.whatsapp_send ?? {};\n\nif (send.valid !== true) {\n  return {\n    json: {\n      meta_send_result: {\n        ok: false,\n        code: 'INVALID_WHATSAPP_SEND_PAYLOAD',\n        errors: send.errors ?? []\n      }\n    }\n  };\n}\n\nconst fakeWamid =\n  `wamid.DEV_${Date.now()}`;\n\nreturn {\n  json: {\n    meta_send_result: {\n      ok: true,\n\n      dev_simulation: true,\n\n      internal_message_id:\n        send.internal_message_id,\n\n      provider:\n        send.provider,\n\n      external_message_id:\n        fakeWamid,\n\n      raw_response: {\n        messaging_product: 'whatsapp',\n\n        contacts: [\n          {\n            input:\n              send.recipient,\n\n            wa_id:\n              send.recipient\n          }\n        ],\n\n        messages: [\n          {\n            id:\n              fakeWamid\n          }\n        ]\n      }\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3680,
+        272
+      ],
+      "id": "038405ca-ee41-491c-b124-54d25edaef7b",
+      "name": "12 - DEV SIMULAR ENVIO META"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.bind_outbound_external_message(\n    $1::UUID,\n    $2::UUID,\n    $3::TEXT,\n    $4::TEXT\n) AS binding;",
+        "options": {
+          "queryReplacement": "={{ [\n  $('02 - CARREGAR CONTEXTO CORE').first().json.context.business.id,\n\n  $('11 - PREPARAR ENVIO WHATSAPP').first().json.whatsapp_send.internal_message_id,\n\n  'META',\n\n  $json.messages[0].id\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        3872,
+        -192
+      ],
+      "id": "8bae360f-0116-42cd-b53b-b336ddf1bbf1",
+      "name": "13 - VINCULAR EXTERNAL MESSAGE ID",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $json.whatsapp_send.phone_number_id }}",
+        "recipientPhoneNumber": "<REDACTED_PHONE>",
+        "textBody": "={{ $json.whatsapp_send.text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        3504,
+        384
+      ],
+      "id": "7e753de7-4db9-4171-9db8-9990904bf3b0",
+      "name": "12 - ENVIAR WHATSAPP META",
+      "webhookId": "387842cb-e937-427f-aabd-17a23a837b78",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "azaCdvknfOTsWziR",
+          "name": "WhatsApp account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v26.0/{{ $('11 - PREPARAR ENVIO WHATSAPP').item.json.whatsapp_send.phone_number_id }}/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('11 - PREPARAR ENVIO WHATSAPP').item.json.whatsapp_send.meta_payload }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        3648,
+        -192
+      ],
+      "id": "1ec289c9-261d-4377-b733-78aa1032e9ea",
+      "name": "12 - ENVIAR WHATSAPP META1",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "azaCdvknfOTsWziR",
+          "name": "WhatsApp account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        0
+      ],
+      "id": "42352c64-8bca-4611-8f3c-6905744ece72",
+      "name": "00 - WHATSAPP TRIGGER",
+      "webhookId": "434f2041-d883-4038-b93a-6025c2603457",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "4KiEzu4EUZgh4xNV",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = $json;\n\nconst message =\n  Array.isArray(raw.messages)\n    ? raw.messages[0]\n    : null;\n\nconst contact =\n  Array.isArray(raw.contacts)\n    ? raw.contacts[0]\n    : null;\n\n\n// ======================================================\n// VALIDAR EVENTO\n// ======================================================\n\nif (!message) {\n  return {\n    json: {\n      event_type: 'UNSUPPORTED_EVENT',\n      raw_payload: raw\n    }\n  };\n}\n\n\n// ======================================================\n// TIMESTAMP\n// ======================================================\n\nlet providerTimestamp = null;\n\nif (message.timestamp) {\n\n  const unix =\n    Number(message.timestamp);\n\n  if (\n    Number.isFinite(unix)\n    && unix > 0\n  ) {\n    providerTimestamp =\n      new Date(unix * 1000).toISOString();\n  }\n}\n\nproviderTimestamp =\n  providerTimestamp\n  ?? new Date().toISOString();\n\n\n// ======================================================\n// IDENTIDADE DO CLIENTE\n// ======================================================\n\nconst externalUserId =\n  contact?.wa_id\n  ?? message.from\n  ?? null;\n\nconst profileName =\n  contact?.profile?.name\n  ?? null;\n\n\n// ======================================================\n// CONTEÚDO\n// ======================================================\n\nconst originalType =\n  String(\n    message.type\n    ?? 'unknown'\n  ).toLowerCase();\n\nlet text = null;\n\nlet interaction = null;\n\nlet media = {\n  id: null,\n  mime_type: null,\n  url: null,\n  caption: null,\n  filename: null\n};\n\n\n// ======================================================\n// TEXTO\n// ======================================================\n\nif (originalType === 'text') {\n\n  text =\n    message.text?.body\n    ?? null;\n}\n\n\n// ======================================================\n// INTERACTIVE\n// ======================================================\n\nif (originalType === 'interactive') {\n\n  const interactiveType =\n    message.interactive?.type\n    ?? null;\n\n\n  // ----------------------------------------------------\n  // LIST REPLY\n  // ----------------------------------------------------\n\n  if (interactiveType === 'list_reply') {\n\n    const reply =\n      message.interactive?.list_reply\n      ?? {};\n\n    const replyId =\n      reply.id\n      ?? null;\n\n    let slotOfferId = null;\n    let optionNumber = null;\n\n\n    if (\n      typeof replyId === 'string'\n      && replyId.startsWith('slot|')\n    ) {\n\n      const parts =\n        replyId.split('|');\n\n      if (\n        parts.length === 3\n        && parts[0] === 'slot'\n      ) {\n\n        slotOfferId =\n          parts[1]\n          ?? null;\n\n        const parsedOption =\n          Number(parts[2]);\n\n        if (\n          Number.isInteger(parsedOption)\n          && parsedOption >= 1\n        ) {\n          optionNumber =\n            parsedOption;\n        }\n      }\n    }\n\n\n    interaction = {\n\n      kind:\n        'LIST_REPLY',\n\n      action:\n        slotOfferId && optionNumber\n          ? 'SELECT_SLOT'\n          : null,\n\n      reply_id:\n        replyId,\n\n      title:\n        reply.title\n        ?? null,\n\n      description:\n        reply.description\n        ?? null,\n\n      slot_offer_id:\n        slotOfferId,\n\n      option_number:\n        optionNumber\n    };\n\n\n    // Texto humano também fica disponível para histórico/IA.\n    text =\n      reply.title\n      ?? null;\n  }\n\n\n  // ----------------------------------------------------\n  // BUTTON REPLY\n  // ----------------------------------------------------\n\n  else if (interactiveType === 'button_reply') {\n\n    const reply =\n      message.interactive?.button_reply\n      ?? {};\n\n    const replyId =\n      reply.id\n      ?? null;\n\n    let slotOfferId = null;\n    let optionNumber = null;\n\n\n    if (\n      typeof replyId === 'string'\n      && replyId.startsWith('slot|')\n    ) {\n\n      const parts =\n        replyId.split('|');\n\n      if (\n        parts.length === 3\n        && parts[0] === 'slot'\n      ) {\n\n        slotOfferId =\n          parts[1]\n          ?? null;\n\n        const parsedOption =\n          Number(parts[2]);\n\n        if (\n          Number.isInteger(parsedOption)\n          && parsedOption >= 1\n        ) {\n          optionNumber =\n            parsedOption;\n        }\n      }\n    }\n\n\n    interaction = {\n\n      kind:\n        'BUTTON_REPLY',\n\n      action:\n        slotOfferId && optionNumber\n          ? 'SELECT_SLOT'\n          : null,\n\n      reply_id:\n        replyId,\n\n      title:\n        reply.title\n        ?? null,\n\n      slot_offer_id:\n        slotOfferId,\n\n      option_number:\n        optionNumber\n    };\n\n\n    text =\n      reply.title\n      ?? null;\n  }\n}\n\n\n// ======================================================\n// ÁUDIO\n// ======================================================\n\nif (originalType === 'audio') {\n\n  media = {\n    ...media,\n\n    id:\n      message.audio?.id\n      ?? null,\n\n    mime_type:\n      message.audio?.mime_type\n      ?? null\n  };\n}\n\n\n// ======================================================\n// IMAGEM\n// ======================================================\n\nif (originalType === 'image') {\n\n  media = {\n    ...media,\n\n    id:\n      message.image?.id\n      ?? null,\n\n    mime_type:\n      message.image?.mime_type\n      ?? null,\n\n    caption:\n      message.image?.caption\n      ?? null\n  };\n\n  text =\n    message.image?.caption\n    ?? null;\n}\n\n\n// ======================================================\n// DOCUMENTO\n// ======================================================\n\nif (originalType === 'document') {\n\n  media = {\n    ...media,\n\n    id:\n      message.document?.id\n      ?? null,\n\n    mime_type:\n      message.document?.mime_type\n      ?? null,\n\n    caption:\n      message.document?.caption\n      ?? null,\n\n    filename:\n      message.document?.filename\n      ?? null\n  };\n\n  text =\n    message.document?.caption\n    ?? null;\n}\n\n\n// ======================================================\n// VÍDEO\n// ======================================================\n\nif (originalType === 'video') {\n\n  media = {\n    ...media,\n\n    id:\n      message.video?.id\n      ?? null,\n\n    mime_type:\n      message.video?.mime_type\n      ?? null,\n\n    caption:\n      message.video?.caption\n      ?? null\n  };\n\n  text =\n    message.video?.caption\n    ?? null;\n}\n\n\n// ======================================================\n// OUTPUT CANÔNICO\n// ======================================================\n\nreturn {\n  json: {\n\n    event_type:\n      'INBOUND_MESSAGE',\n\n    dev:\n      false,\n\n    /*\n     * TEMPORÁRIO DURANTE O TESTE DA BARBEARIA.\n     *\n     * Depois vamos resolver a empresa pelo phone_number_id\n     * cadastrado em business_channels, sem hardcode.\n     */\n    business_code:\n      'BARB001',\n\n    channel: {\n\n      type:\n        'WHATSAPP',\n\n      provider:\n        'META',\n\n      external_channel_id:\n        raw.metadata?.phone_number_id\n        ?? null\n    },\n\n    customer: {\n\n      external_user_id:\n        externalUserId,\n\n      profile_name:\n        profileName\n    },\n\n    message: {\n\n      external_message_id:\n        message.id\n        ?? null,\n\n      idempotency_key:\n        message.id\n          ? `IN:META:${message.id}`\n          : null,\n\n      type:\n        originalType,\n\n      text,\n\n      interaction,\n\n      media,\n\n      reply_to_external_message_id:\n        message.context?.id\n        ?? null,\n\n      provider_timestamp:\n        providerTimestamp,\n\n      raw_payload:\n        raw\n    },\n\n    received_at:\n      new Date().toISOString()\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        0
+      ],
+      "id": "b942caa2-8ab6-4091-bd22-2f4f1e473877",
+      "name": "00B - NORMALIZAR WEBHOOK META"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{\n  (\n    $('01 - NORMALIZAR ENTRADA').first().json.message?.interaction?.action === 'SELECT_SLOT'\n    ||\n    $('01 - NORMALIZAR ENTRADA').first().json.message?.interaction?.reply_id?.startsWith('rebook|')\n  )\n    ? 'STRUCTURED_ACTION'\n    : 'AI'\n}}",
+                    "rightValue": "STRUCTURED_ACTION",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "c0e0474a-3369-414c-be89-2dd0013bbf0a"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "STRUCTURED_ACTION"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "79b9f822-0abc-4cde-b68a-4f4da025ee74",
+                    "leftValue": "={{\n  (\n    $('01 - NORMALIZAR ENTRADA').first().json.message?.interaction?.action === 'SELECT_SLOT'\n    ||\n    $('01 - NORMALIZAR ENTRADA').first().json.message?.interaction?.reply_id?.startsWith('rebook|')\n  )\n    ? 'STRUCTURED_ACTION'\n    : 'AI'\n}}",
+                    "rightValue": "AI",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "AI"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        656,
+        -32
+      ],
+      "id": "6097a4ab-465c-4c39-9967-063339ff677d",
+      "name": "02B - ROTEAR TIPO DE ENTRADA"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const input =\n  $('01 - NORMALIZAR ENTRADA').first().json;\n\nconst context =\n  $('02 - CARREGAR CONTEXTO CORE').first().json.context ?? {};\n\nconst interaction =\n  input.message?.interaction ?? null;\n\n\n// ======================================================\n// HELPERS\n// ======================================================\n\nconst emptyArguments = () => ({\n  service_id: null,\n  professional_id: null,\n  date: null,\n  period: null,\n  time: null,\n  time_from: null,\n  time_until: null,\n  option_number: null,\n  appointment_id: null,\n  allow_professional_fallback: false\n});\n\n\nconst UUID_REGEX =\n  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;\n\n\n// ======================================================\n// HELPER - REBOOK A PARTIR DO CONTEXTO\n// ======================================================\n//\n// Usado quando uma lista de horários expirou durante\n// um fluxo de reagendamento iniciado por cancelamento.\n//\n// NÃO confiamos em serviço, profissional ou horário\n// armazenados no contexto.\n//\n// A única referência operacional é appointment_id.\n//\n// O CORE continuará responsável por validar:\n// - empresa\n// - cliente\n// - ownership\n// - status CANCELLED\n// - ator do cancelamento\n// - profissional\n// - serviços\n// - disponibilidade\n// ======================================================\n\nconst buildRebookFromContext = () => {\n\n  const rebooking =\n    context.conversation?.context?.rebooking\n    ?? null;\n\n  const appointmentId =\n    rebooking?.source_appointment_id\n    ?? null;\n\n\n  if (\n    !appointmentId\n    || typeof appointmentId !== 'string'\n    || !UUID_REGEX.test(appointmentId)\n  ) {\n    return null;\n  }\n\n\n  return {\n    json: {\n      structured_command: {\n\n        kind:\n          'BUSINESS_ACTION',\n\n        intent:\n          'REBOOK_APPOINTMENT',\n\n        action:\n          'REBOOK_APPOINTMENT',\n\n        arguments: {\n          ...emptyArguments(),\n\n          appointment_id:\n            appointmentId\n        },\n\n        missing_information:\n          [],\n\n        customer_meaning:\n          'A lista anterior de horários expirou durante o reagendamento. O cliente continua querendo outro horário para o agendamento cancelado.',\n\n        direct_response:\n          null,\n\n        confidence:\n          1\n      }\n    }\n  };\n};\n\n\n// ======================================================\n// VALIDAR EXISTÊNCIA DA INTERAÇÃO\n// ======================================================\n\nif (!interaction) {\n  return {\n    json: {\n      structured_command: {\n\n        kind:\n          'NEED_INFORMATION',\n\n        intent:\n          'OTHER',\n\n        action:\n          'NONE',\n\n        arguments:\n          emptyArguments(),\n\n        missing_information: [\n          'CLARIFICATION'\n        ],\n\n        customer_meaning:\n          'Interação estruturada não reconhecida.',\n\n        direct_response:\n          'Não consegui identificar essa opção. Pode tentar novamente?',\n\n        confidence:\n          1\n      }\n    }\n  };\n}\n\n\n// ======================================================\n// IDENTIFICAR TIPO DE AÇÃO ESTRUTURADA\n// ======================================================\n\nconst replyId =\n  typeof interaction.reply_id === 'string'\n    ? interaction.reply_id.trim()\n    : '';\n\nconst isSelectSlot =\n  interaction.action === 'SELECT_SLOT';\n\nconst isRebook =\n  replyId.startsWith('rebook|');\n\n\n// ======================================================\n// REBOOK DE AGENDAMENTO CANCELADO\n// ======================================================\n\nif (isRebook) {\n\n  const parts =\n    replyId.split('|');\n\n  const appointmentId =\n    parts.length === 2\n      ? parts[1]\n      : null;\n\n\n  // ----------------------------------------------------\n  // VALIDAR FORMATO\n  // ----------------------------------------------------\n\n  if (\n    !appointmentId\n    || !UUID_REGEX.test(appointmentId)\n  ) {\n    return {\n      json: {\n        structured_command: {\n\n          kind:\n            'NEED_INFORMATION',\n\n          intent:\n            'REBOOK_APPOINTMENT',\n\n          action:\n            'NONE',\n\n          arguments:\n            emptyArguments(),\n\n          missing_information: [\n            'APPOINTMENT'\n          ],\n\n          customer_meaning:\n            'Cliente clicou em um botão de reagendamento inválido.',\n\n          direct_response:\n            'Não consegui identificar o agendamento que você quer remarcar. Posso te ajudar a procurar outro horário.',\n\n          confidence:\n            1\n        }\n      }\n    };\n  }\n\n\n  // ----------------------------------------------------\n  // NÃO CONFIAR NO CONTEXTO ANTIGO DE BOOKING.\n  //\n  // O appointment_id é a referência determinística.\n  //\n  // O CORE validará:\n  // - empresa\n  // - cliente\n  // - status\n  // - cancelamento\n  // - profissional\n  // - serviços\n  // ----------------------------------------------------\n\n  return {\n    json: {\n      structured_command: {\n\n        kind:\n          'BUSINESS_ACTION',\n\n        intent:\n          'REBOOK_APPOINTMENT',\n\n        action:\n          'REBOOK_APPOINTMENT',\n\n        arguments: {\n          ...emptyArguments(),\n\n          appointment_id:\n            appointmentId\n        },\n\n        missing_information:\n          [],\n\n        customer_meaning:\n          'Cliente quer procurar um novo horário a partir do agendamento cancelado.',\n\n        direct_response:\n          null,\n\n        confidence:\n          1\n      }\n    }\n  };\n}\n\n\n// ======================================================\n// SELECT_SLOT\n// ======================================================\n\nif (isSelectSlot) {\n\n  const activeOffer =\n    context.active_offer\n    ?? null;\n\n  const clickedOfferId =\n    typeof interaction.slot_offer_id === 'string'\n      ? interaction.slot_offer_id.trim()\n      : null;\n\n  const optionNumber =\n    interaction.option_number\n    ?? null;\n\n\n  // ====================================================\n  // VALIDAR IDENTIFICADOR DA OFERTA CLICADA\n  // ====================================================\n\n  if (\n    !clickedOfferId\n    || !UUID_REGEX.test(clickedOfferId)\n  ) {\n    return {\n      json: {\n        structured_command: {\n\n          kind:\n            'NEED_INFORMATION',\n\n          intent:\n            'SELECT_SLOT',\n\n          action:\n            'NONE',\n\n          arguments:\n            emptyArguments(),\n\n          missing_information: [\n            'SLOT_OFFER'\n          ],\n\n          customer_meaning:\n            'Cliente clicou em uma opção cujo identificador da oferta é inválido.',\n\n          direct_response:\n            'Não consegui identificar essa lista de horários. Posso buscar opções atualizadas pra você.',\n\n          confidence:\n            1\n        }\n      }\n    };\n  }\n\n\n  // ====================================================\n  // NÃO EXISTE MAIS OFERTA ATIVA\n  //\n  // A lista expirou.\n  //\n  // Se estivermos dentro de um fluxo de rebooking,\n  // regeneramos a oferta automaticamente.\n  // ====================================================\n\n  if (!activeOffer) {\n\n    const automaticRebook =\n      buildRebookFromContext();\n\n\n    if (automaticRebook) {\n      return automaticRebook;\n    }\n\n\n    // --------------------------------------------------\n    // Não existe contexto suficiente para regenerar\n    // deterministicamente.\n    // --------------------------------------------------\n\n    return {\n      json: {\n        structured_command: {\n\n          kind:\n            'CONVERSATION',\n\n          intent:\n            'SELECT_SLOT',\n\n          action:\n            'NONE',\n\n          arguments:\n            emptyArguments(),\n\n          missing_information:\n            [],\n\n          customer_meaning:\n            'Cliente selecionou uma opção de uma oferta que expirou e não há contexto suficiente para regenerá-la automaticamente.',\n\n          direct_response:\n            'Essa lista já não está mais ativa. Me diga o dia ou horário que você procura e eu verifico novamente.',\n\n          confidence:\n            1\n        }\n      }\n    };\n  }\n\n\n  // ====================================================\n  // EXISTE OFERTA ATIVA, MAS O CLIENTE CLICOU EM OUTRA\n  //\n  // Isso pode ocorrer quando:\n  // - existe uma lista antiga na conversa;\n  // - uma nova oferta já foi criada depois;\n  // - o cliente clicou na mensagem antiga.\n  //\n  // NÃO criamos outra oferta aqui para evitar:\n  // - múltiplas ofertas concorrentes;\n  // - invalidar uma oferta recém-criada;\n  // - loops de regeneração.\n  // ====================================================\n\n  if (\n    activeOffer.slot_offer_id !== clickedOfferId\n  ) {\n    return {\n      json: {\n        structured_command: {\n\n          kind:\n            'CONVERSATION',\n\n          intent:\n            'SELECT_SLOT',\n\n          action:\n            'NONE',\n\n          arguments:\n            emptyArguments(),\n\n          missing_information:\n            [],\n\n          customer_meaning:\n            'Cliente clicou em uma lista antiga enquanto já existe uma oferta de horários mais recente ativa.',\n\n          direct_response:\n            'Essa lista é antiga. Use a lista de horários mais recente que enviei pra você.',\n\n          confidence:\n            1\n        }\n      }\n    };\n  }\n\n\n  // ====================================================\n  // VALIDAR OPTION_NUMBER\n  // ====================================================\n\n  if (\n    !Number.isInteger(optionNumber)\n    || optionNumber <= 0\n  ) {\n    return {\n      json: {\n        structured_command: {\n\n          kind:\n            'NEED_INFORMATION',\n\n          intent:\n            'SELECT_SLOT',\n\n          action:\n            'NONE',\n\n          arguments:\n            emptyArguments(),\n\n          missing_information: [\n            'SLOT_OPTION'\n          ],\n\n          customer_meaning:\n            'Cliente clicou em uma opção com número inválido.',\n\n          direct_response:\n            'Não consegui identificar esse horário. Pode escolher uma opção da lista novamente.',\n\n          confidence:\n            1\n        }\n      }\n    };\n  }\n\n\n  // ====================================================\n  // VALIDAR OPÇÃO\n  // ====================================================\n\n  const selectedOption =\n    Array.isArray(activeOffer.options)\n      ? activeOffer.options.find(\n          option =>\n            option.option_number === optionNumber\n        )\n      : null;\n\n\n  if (!selectedOption) {\n    return {\n      json: {\n        structured_command: {\n\n          kind:\n            'NEED_INFORMATION',\n\n          intent:\n            'SELECT_SLOT',\n\n          action:\n            'NONE',\n\n          arguments:\n            emptyArguments(),\n\n          missing_information: [\n            'SLOT_OPTION'\n          ],\n\n          customer_meaning:\n            'Cliente clicou em uma opção que não existe na oferta ativa.',\n\n          direct_response:\n            'Essa opção não está mais disponível. Pode escolher outro horário da lista.',\n\n          confidence:\n            1\n        }\n      }\n    };\n  }\n\n\n  // ====================================================\n  // COMANDO DETERMINÍSTICO SELECT_SLOT\n  // ====================================================\n\n  return {\n    json: {\n      structured_command: {\n\n        kind:\n          'BUSINESS_ACTION',\n\n        intent:\n          'SELECT_SLOT',\n\n        action:\n          'SELECT_SLOT',\n\n        arguments: {\n\n          service_id:\n            null,\n\n          professional_id:\n            selectedOption.professional_id\n            ?? null,\n\n          date:\n            selectedOption.local_date\n            ?? null,\n\n          period:\n            null,\n\n          time:\n            selectedOption.local_start\n            ?? interaction.title\n            ?? null,\n\n          time_from:\n            null,\n\n          time_until:\n            null,\n\n          option_number:\n            optionNumber,\n\n          appointment_id:\n            null,\n\n          allow_professional_fallback:\n            false,\n\n          slot_offer_id:\n            clickedOfferId\n        },\n\n        missing_information:\n          [],\n\n        customer_meaning:\n          `Cliente selecionou o horário ${selectedOption.local_start ?? interaction.title ?? ''}.`,\n\n        direct_response:\n          null,\n\n        confidence:\n          1\n      }\n    }\n  };\n}\n\n\n// ======================================================\n// INTERAÇÃO ESTRUTURADA DESCONHECIDA\n// ======================================================\n\nreturn {\n  json: {\n    structured_command: {\n\n      kind:\n        'NEED_INFORMATION',\n\n      intent:\n        'OTHER',\n\n      action:\n        'NONE',\n\n      arguments:\n        emptyArguments(),\n\n      missing_information: [\n        'CLARIFICATION'\n      ],\n\n      customer_meaning:\n        'Interação estruturada não reconhecida.',\n\n      direct_response:\n        'Não consegui identificar essa opção. Pode tentar novamente?',\n\n      confidence:\n        1\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        -192
+      ],
+      "id": "e1b94b8a-74cf-42d7-8874-30c00c6a3292",
+      "name": "03S - PREPARAR COMANDO ESTRUTURADO"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $('14 - PREPARAR CALENDAR SYNC').first().json.calendar_sync.external_calendar_id }}",
+          "mode": "id"
+        },
+        "start": "={{ $('14 - PREPARAR CALENDAR SYNC').first().json.calendar_sync.appointment.start_at }}",
+        "end": "={{ $('14 - PREPARAR CALENDAR SYNC').first().json.calendar_sync.appointment.end_at }}",
+        "additionalFields": {
+          "description": "={{   (() => {     const sync = $('14 - PREPARAR CALENDAR SYNC').first().json.calendar_sync;     const ctx = $('02 - CARREGAR CONTEXTO CORE').first().json.context;      const customer = ctx.customer?.name ?? 'Cliente';      const professional =       ctx.professionals?.find(         p => p.professional_id === sync.appointment.professional_id       )?.display_name ?? 'Profissional';      const requestedServiceId =       ctx.active_offer?.requested_service_ids?.[0] ?? null;      const service =       ctx.services?.find(         s => s.service_id === requestedServiceId       )?.name ?? 'Atendimento';      return [       `Cliente: ${customer}`,       `Serviço: ${service}`,       `Profissional: ${professional}`,       `Valor: R$ ${Number(sync.appointment.total_price ?? 0).toFixed(2).replace('.', ',')}`,       `Appointment ID: ${sync.appointment.appointment_id}`,       '',       'Criado automaticamente pela ML Automações.'     ].join('\\n');   })() }}",
+          "summary": "={{   (() => {     const ctx = $('02 - CARREGAR CONTEXTO CORE').first().json.context;     const customer = ctx.customer?.name ?? 'Cliente';     const professional =       ctx.professionals?.find(         p => p.professional_id === $('14 - PREPARAR CALENDAR SYNC').first().json.calendar_sync.appointment.professional_id       )?.display_name ?? 'Profissional';      const requestedServiceId =       ctx.active_offer?.requested_service_ids?.[0] ?? null;      const service =       ctx.services?.find(         s => s.service_id === requestedServiceId       )?.name ?? 'Atendimento';      return `${service} - ${customer} | ${professional}`;   })() }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        3328,
+        -752
+      ],
+      "id": "b4e28764-dabc-49b6-87ba-f58ab12856c0",
+      "name": "16 - GOOGLE CALENDAR CREATE EVENT",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "OglzB3yiA88NTc5n",
+          "name": "Google Calendar account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.prepare_appointment_calendar_sync(\n    $1::UUID,\n    $2::UUID,\n    $3::TEXT\n) AS calendar_sync;",
+        "options": {
+          "queryReplacement": "={{ [   $('02 - CARREGAR CONTEXTO CORE').first().json.context.business.id,   $('06 - EXECUTAR AÇÃO CORE').first().json.execution.calendar_sync.appointment_id,   $('06 - EXECUTAR AÇÃO CORE').first().json.execution.calendar_sync.operation ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        2080,
+        -560
+      ],
+      "id": "c8d8891c-31c6-4bcd-a0c3-4378ead5df24",
+      "name": "14 - PREPARAR CALENDAR SYNC",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{   $json.calendar_sync?.ok !== true     ? 'ERROR'     : $json.calendar_sync?.code === 'CALENDAR_ALREADY_SYNCED'       ? 'SKIP'       : $json.calendar_sync?.code === 'CALENDAR_SYNC_READY'         && $json.calendar_sync?.operation === 'CREATE'         && !$json.calendar_sync?.external_event_id           ? 'CREATE'           : 'ERROR' }}",
+                    "rightValue": "CREATE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "6e8d7b3f-172d-4e48-811e-22e659d2ea1c"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "CREATE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "62aab132-9fdd-4365-ad77-1fd4f7452ef0",
+                    "leftValue": "={{   $json.calendar_sync?.ok !== true     ? 'ERROR'     : $json.calendar_sync?.code === 'CALENDAR_ALREADY_SYNCED'       ? 'SKIP'       : $json.calendar_sync?.code === 'CALENDAR_SYNC_READY'         && $json.calendar_sync?.operation === 'CREATE'         && !$json.calendar_sync?.external_event_id           ? 'CREATE'           : 'ERROR' }}",
+                    "rightValue": "SKIP",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "SKIP"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "5dc4679c-a996-43c9-87e9-0a490406554c",
+                    "leftValue": "={{   $json.calendar_sync?.ok !== true     ? 'ERROR'     : $json.calendar_sync?.code === 'CALENDAR_ALREADY_SYNCED'       ? 'SKIP'       : $json.calendar_sync?.code === 'CALENDAR_SYNC_READY'         && $json.calendar_sync?.operation === 'CREATE'         && !$json.calendar_sync?.external_event_id           ? 'CREATE'           : 'ERROR' }}",
+                    "rightValue": "ERROR",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ERROR"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2272,
+        -576
+      ],
+      "id": "a3d7dc74-f36e-46ad-87e1-d6cb1c117245",
+      "name": "15 - CONTROLAR CALENDAR SYNC"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.complete_appointment_calendar_sync(\n    $1::UUID,\n    $2::TEXT,\n    $3::JSONB\n) AS calendar_sync_completion;",
+        "options": {
+          "queryReplacement": "={{ [\n  $('14 - PREPARAR CALENDAR SYNC').first().json.calendar_sync.sync_id,\n  $json.id,\n  JSON.stringify($json.event ?? $json)\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        3696,
+        -960
+      ],
+      "id": "0f21bb0c-d552-4ad9-871a-f98ca8978c89",
+      "name": "17 - FINALIZAR CALENDAR SYNC",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $('14 - PREPARAR CALENDAR SYNC').first().json.calendar_sync.external_calendar_id }}",
+          "mode": "id"
+        },
+        "limit": 10,
+        "timeMin": "={{\n  DateTime\n    .fromISO($('14 - PREPARAR CALENDAR SYNC').first().json.calendar_sync.appointment.start_at)\n    .minus({ days: 1 })\n    .toISO()\n}}",
+        "timeMax": "={{\n  DateTime\n    .fromISO($('14 - PREPARAR CALENDAR SYNC').first().json.calendar_sync.appointment.end_at)\n    .plus({ days: 1 })\n    .toISO()\n}}",
+        "options": {
+          "query": "={{ $('14 - PREPARAR CALENDAR SYNC').first().json.calendar_sync.appointment.appointment_id }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        2608,
+        -752
+      ],
+      "id": "71e46f6f-9ad8-4a0a-8762-61ba37b62a2a",
+      "name": "15A - PROCURAR EVENTO EXISTENTE",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "OglzB3yiA88NTc5n",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst sync =\n  $('14 - PREPARAR CALENDAR SYNC').first().json.calendar_sync;\n\nconst appointmentId =\n  sync?.appointment?.appointment_id ?? null;\n\nif (!appointmentId) {\n  return [\n    {\n      json: {\n        route: 'ERROR',\n        error: 'APPOINTMENT_ID_MISSING'\n      }\n    }\n  ];\n}\n\n\n// ======================================================\n// PROCURAR EVENTO REALMENTE CORRESPONDENTE\n// ======================================================\n\nconst marker =\n  `Appointment ID: ${appointmentId}`;\n\nconst matchingEvent =\n  items\n    .map(item => item.json ?? {})\n    .find(event => {\n\n      const description =\n        String(event.description ?? '');\n\n      const eventId =\n        event.id ?? null;\n\n      const status =\n        String(event.status ?? '').toLowerCase();\n\n      return (\n        eventId\n        && description.includes(marker)\n        && status !== 'cancelled'\n      );\n    });\n\n\n// ======================================================\n// EVENTO JÁ EXISTE NO GOOGLE\n// ======================================================\n\nif (matchingEvent) {\n\n  return [\n    {\n      json: {\n        route:\n          'FOUND',\n\n        id:\n          matchingEvent.id,\n\n        reconciliation: {\n          code:\n            'EXISTING_GOOGLE_EVENT_FOUND',\n\n          appointment_id:\n            appointmentId,\n\n          external_event_id:\n            matchingEvent.id\n        },\n\n        event:\n          matchingEvent\n      }\n    }\n  ];\n}\n\n\n// ======================================================\n// NÃO EXISTE → PODE CRIAR\n// ======================================================\n\nreturn [\n  {\n    json: {\n      route:\n        'CREATE',\n\n      reconciliation: {\n        code:\n          'GOOGLE_EVENT_NOT_FOUND',\n\n        appointment_id:\n          appointmentId\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2784,
+        -752
+      ],
+      "id": "5984d318-5374-4740-919c-04f722ec59c0",
+      "name": "15B - RESOLVER RECONCILIACAO"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "FOUND",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "cac680bd-af92-42fa-8aab-10e352a14122"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "FOUND"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "12ed7e16-e8c2-4b2f-b91f-7464c4b44b49",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "CREATE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "CREATE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "e91c91ef-7234-4cd6-8523-12803c1ace41",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "ERROR",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ERROR"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2960,
+        -768
+      ],
+      "id": "237a6280-804e-4a1b-a63d-559b79fab4a1",
+      "name": "15C - ROTEAR RECONCILIACAO"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ [\n  $('14 - PREPARAR CALENDAR SYNC').first().json.calendar_sync.sync_id,\n  $json.error?.message\n    ?? $json.message\n    ?? $json.description\n    ?? 'GOOGLE_CALENDAR_CREATE_FAILED',\n  JSON.stringify($json)\n] }}",
+        "options": {
+          "queryReplacement": "={{ [   $('14 - PREPARAR CALENDAR SYNC').first().json.calendar_sync.sync_id,   $json.error?.message     ?? $json.message     ?? $json.description     ?? 'GOOGLE_CALENDAR_CREATE_FAILED',   JSON.stringify($json) ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        3696,
+        -736
+      ],
+      "id": "40f2f94f-71cc-4132-a6bf-9a2389f317ff",
+      "name": "18 - REGISTRAR FALHA CALENDAR",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.prepare_appointment_calendar_sync(\n    $1::UUID,\n    $2::UUID,\n    'DELETE'::TEXT\n) AS calendar_sync;",
+        "options": {
+          "queryReplacement": "={{ [   '89dffc95-4b4c-41dd-8da9-f3aeb61a8131',   '27d390bb-13b8-4876-9b16-19b035ff69c9' ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        2288,
+        400
+      ],
+      "id": "1865892b-a9b4-4dc1-939e-09acca554106",
+      "name": "19 - PREPARAR CALENDAR DELETE",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{   $json.calendar_sync?.ok !== true     ? 'ERROR'     : $json.calendar_sync?.code === 'CALENDAR_SYNC_READY'       && $json.calendar_sync?.operation === 'DELETE'       && $json.calendar_sync?.external_event_id         ? 'DELETE'         : 'ERROR' }}",
+                    "rightValue": "DELETE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0e878ecf-4bad-4487-9ea1-30154fe9ca46"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "DELETE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "7d317614-27dc-4080-978c-0cabf5895ecb",
+                    "leftValue": "={{   $json.calendar_sync?.ok !== true     ? 'ERROR'     : $json.calendar_sync?.code === 'CALENDAR_SYNC_READY'       && $json.calendar_sync?.operation === 'DELETE'       && $json.calendar_sync?.external_event_id         ? 'DELETE'         : 'ERROR' }}",
+                    "rightValue": "ERROR",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ERROR"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2512,
+        400
+      ],
+      "id": "80d522f8-fab1-42a3-9f4e-51ecf6d5647b",
+      "name": "20 - CONTROLAR CALENDAR DELETE"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $('19 - PREPARAR CALENDAR DELETE').first().json.calendar_sync.external_calendar_id }}",
+          "mode": "id"
+        },
+        "eventId": "={{ $('19 - PREPARAR CALENDAR DELETE').first().json.calendar_sync.external_event_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        2736,
+        304
+      ],
+      "id": "e72cd4f8-53d5-4e20-82b5-9a7378454314",
+      "name": "Delete an event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "OglzB3yiA88NTc5n",
+          "name": "Google Calendar account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.complete_appointment_calendar_sync(\n    $1::UUID,\n    $2::TEXT,\n    $3::JSONB\n) AS calendar_delete_completion;",
+        "options": {
+          "queryReplacement": "={{ [   $('19 - PREPARAR CALENDAR DELETE').first().json.calendar_sync.sync_id,   $('19 - PREPARAR CALENDAR DELETE').first().json.calendar_sync.external_event_id,   JSON.stringify({     operation: 'DELETE',     google_result: $json   }) ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        2960,
+        208
+      ],
+      "id": "03b6f693-df7c-4772-98f2-870f3c7b80fa",
+      "name": "22 - FINALIZAR CALENDAR DELETE",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.fail_appointment_calendar_sync(\n    $1::UUID,\n    $2::TEXT,\n    $3::JSONB\n) AS calendar_delete_failure;",
+        "options": {
+          "queryReplacement": "={{ [   $('19 - PREPARAR CALENDAR DELETE').first().json.calendar_sync.sync_id,   $json.error?.message     ?? $json.message     ?? $json.description     ?? 'GOOGLE_CALENDAR_DELETE_FAILED',   JSON.stringify($json) ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        2960,
+        400
+      ],
+      "id": "61cb4b13-7bfa-4504-b043-191bcb8a0b15",
+      "name": "23 - REGISTRAR FALHA CALENDAR DELETE",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.prepare_appointment_cancellation_outbound(\n    $1::UUID,\n    $2::UUID\n) AS outbound;",
+        "options": {
+          "queryReplacement": "={{ [   '89dffc95-4b4c-41dd-8da9-f3aeb61a8131',   '27d390bb-13b8-4876-9b16-19b035ff69c9' ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        3200,
+        672
+      ],
+      "id": "74823e06-67cc-4424-b6c2-1fc81254d03e",
+      "name": "24 - CARREGAR CANCEL OUTBOUND",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.bind_outbound_external_message(\n    $1::UUID,\n    $2::UUID,\n    $3::TEXT,\n    $4::TEXT\n) AS binding;",
+        "options": {
+          "queryReplacement": "={{ [\n  '89dffc95-4b4c-41dd-8da9-f3aeb61a8131',\n  $('24 - CARREGAR CANCEL OUTBOUND').first().json.outbound.internal_message_id,\n  'META',\n  $('25 - ENVIAR CANCELAMENTO WHATSAPP').first().json.messages[0].id\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        3664,
+        672
+      ],
+      "id": "46dd59a3-34fc-420a-9fdb-2591f24036bc",
+      "name": "26 - VINCULAR CANCEL EXTERNAL MESSAGE ID",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v26.0/1346443965213498/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"recipient_type\": \"individual\",\n  \"to\": \"<REDACTED_PHONE>\",\n  \"type\": \"interactive\",\n  \"interactive\": {\n    \"type\": \"button\",\n    \"body\": {\n      \"text\": \"Mael Guedes, seu horário de Corte com Pedro no dia 21/09/2026 às 15:00 precisou ser cancelado.\\n\\nMotivo informado: \\\"Precisei me ausentar por um imprevisto pessoal.\\\"\\n\\nSe quiser, posso procurar outro horário para você.\"\n    },\n    \"action\": {\n      \"buttons\": [\n        {\n          \"type\": \"reply\",\n          \"reply\": {\n            \"id\": \"rebook|27d390bb-13b8-4876-9b16-19b035ff69c9\",\n            \"title\": \"Ver outros horários\"\n          }\n        }\n      ]\n    }\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        3424,
+        672
+      ],
+      "id": "8adf10db-2140-4701-9386-c794eb589c10",
+      "name": "25 - ENVIAR CANCELAMENTO WHATSAPP",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "azaCdvknfOTsWziR",
+          "name": "WhatsApp account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.mark_appointment_cancellation_notification(\n    $1::UUID,\n    $2::UUID,\n    $3::TEXT,\n    $4::UUID,\n    $5::TEXT\n) AS notification_mark;",
+        "options": {
+          "queryReplacement": "={{ [   '89dffc95-4b4c-41dd-8da9-f3aeb61a8131',   '27d390bb-13b8-4876-9b16-19b035ff69c9',   'SENT',   $('24 - CARREGAR CANCEL OUTBOUND').first().json.outbound.internal_message_id,   null ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        3888,
+        672
+      ],
+      "id": "acb256a3-5460-4715-b499-b2c42a00cc09",
+      "name": "27 - MARCAR CANCEL NOTIFICATION SENT",
+      "credentials": {
+        "postgres": {
+          "id": "bOyFgH5XO5bljJZR",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "00 - DEV TRIGGER": {
+      "main": [
+        [
+          {
+            "node": "00A - DEV INPUT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "00A - DEV INPUT": {
+      "main": [
+        []
+      ]
+    },
+    "01 - NORMALIZAR ENTRADA": {
+      "main": [
+        [
+          {
+            "node": "02 - CARREGAR CONTEXTO CORE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 - CARREGAR CONTEXTO CORE": {
+      "main": [
+        [
+          {
+            "node": "02A - CONTROLAR TURNO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03 - PREPARAR IA ORQUESTRADORA": {
+      "main": [
+        [
+          {
+            "node": "04 - IA ORQUESTRADORA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04 - IA ORQUESTRADORA": {
+      "main": [
+        [
+          {
+            "node": "05 - VALIDAR COMANDO IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05 - VALIDAR COMANDO IA": {
+      "main": [
+        [
+          {
+            "node": "05A - ROTEAR RESULTADO DA IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "06 - EXECUTAR AÇÃO CORE": {
+      "main": [
+        [
+          {
+            "node": "07 - PREPARAR RESPONSE ENGINE",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "14 - PREPARAR CALENDAR SYNC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "07 - PREPARAR RESPONSE ENGINE": {
+      "main": [
+        [
+          {
+            "node": "08 - RESPONSE ENGINE IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05A - ROTEAR RESULTADO DA IA": {
+      "main": [
+        [
+          {
+            "node": "06 - EXECUTAR AÇÃO CORE",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "09 - NORMALIZAR RESPOSTA FINAL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "08 - RESPONSE ENGINE IA": {
+      "main": [
+        [
+          {
+            "node": "09 - NORMALIZAR RESPOSTA FINAL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02A - CONTROLAR TURNO": {
+      "main": [
+        [
+          {
+            "node": "02B - ROTEAR TIPO DE ENTRADA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "09 - NORMALIZAR RESPOSTA FINAL": {
+      "main": [
+        [
+          {
+            "node": "10 - FINALIZAR TURNO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10 - FINALIZAR TURNO": {
+      "main": [
+        [
+          {
+            "node": "10A - CONTROLAR ENVIO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10A - CONTROLAR ENVIO": {
+      "main": [
+        [
+          {
+            "node": "11 - PREPARAR ENVIO WHATSAPP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11 - PREPARAR ENVIO WHATSAPP": {
+      "main": [
+        [
+          {
+            "node": "12 - ENVIAR WHATSAPP META1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "12 - DEV SIMULAR ENVIO META": {
+      "main": [
+        []
+      ]
+    },
+    "12 - ENVIAR WHATSAPP META": {
+      "main": [
+        []
+      ]
+    },
+    "12 - ENVIAR WHATSAPP META1": {
+      "main": [
+        [
+          {
+            "node": "13 - VINCULAR EXTERNAL MESSAGE ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "00 - WHATSAPP TRIGGER": {
+      "main": [
+        [
+          {
+            "node": "00B - NORMALIZAR WEBHOOK META",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "00B - NORMALIZAR WEBHOOK META": {
+      "main": [
+        [
+          {
+            "node": "01 - NORMALIZAR ENTRADA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02B - ROTEAR TIPO DE ENTRADA": {
+      "main": [
+        [
+          {
+            "node": "03S - PREPARAR COMANDO ESTRUTURADO",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "03 - PREPARAR IA ORQUESTRADORA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03S - PREPARAR COMANDO ESTRUTURADO": {
+      "main": [
+        [
+          {
+            "node": "05 - VALIDAR COMANDO IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14 - PREPARAR CALENDAR SYNC": {
+      "main": [
+        [
+          {
+            "node": "15 - CONTROLAR CALENDAR SYNC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15 - CONTROLAR CALENDAR SYNC": {
+      "main": [
+        [
+          {
+            "node": "15A - PROCURAR EVENTO EXISTENTE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "16 - GOOGLE CALENDAR CREATE EVENT": {
+      "main": [
+        [
+          {
+            "node": "17 - FINALIZAR CALENDAR SYNC",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "18 - REGISTRAR FALHA CALENDAR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "17 - FINALIZAR CALENDAR SYNC": {
+      "main": [
+        []
+      ]
+    },
+    "15A - PROCURAR EVENTO EXISTENTE": {
+      "main": [
+        [
+          {
+            "node": "15B - RESOLVER RECONCILIACAO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15B - RESOLVER RECONCILIACAO": {
+      "main": [
+        [
+          {
+            "node": "15C - ROTEAR RECONCILIACAO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15C - ROTEAR RECONCILIACAO": {
+      "main": [
+        [
+          {
+            "node": "17 - FINALIZAR CALENDAR SYNC",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "16 - GOOGLE CALENDAR CREATE EVENT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "18 - REGISTRAR FALHA CALENDAR": {
+      "main": [
+        []
+      ]
+    },
+    "19 - PREPARAR CALENDAR DELETE": {
+      "main": [
+        [
+          {
+            "node": "20 - CONTROLAR CALENDAR DELETE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "20 - CONTROLAR CALENDAR DELETE": {
+      "main": [
+        [
+          {
+            "node": "Delete an event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete an event": {
+      "main": [
+        [
+          {
+            "node": "22 - FINALIZAR CALENDAR DELETE",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "23 - REGISTRAR FALHA CALENDAR DELETE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "22 - FINALIZAR CALENDAR DELETE": {
+      "main": [
+        []
+      ]
+    },
+    "24 - CARREGAR CANCEL OUTBOUND": {
+      "main": [
+        [
+          {
+            "node": "25 - ENVIAR CANCELAMENTO WHATSAPP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "25 - ENVIAR CANCELAMENTO WHATSAPP": {
+      "main": [
+        [
+          {
+            "node": "26 - VINCULAR CANCEL EXTERNAL MESSAGE ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "26 - VINCULAR CANCEL EXTERNAL MESSAGE ID": {
+      "main": [
+        [
+          {
+            "node": "27 - MARCAR CANCEL NOTIFICATION SENT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "72e00ece-0001-4a5e-832f-61ba83266942",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c7004598ee6f02caca9e0ee49710cf7b2911a26d277c408f25f804d089d3530f"
+  },
+  "nodeGroups": [],
+  "id": "IHO6XsI0lRWeEHbD",
+  "tags": []
+}

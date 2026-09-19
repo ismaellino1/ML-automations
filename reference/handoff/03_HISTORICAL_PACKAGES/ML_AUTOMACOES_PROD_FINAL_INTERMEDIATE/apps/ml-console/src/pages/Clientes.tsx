@@ -1,0 +1,1 @@
+import {ResourcePage} from "../components/ResourcePage"; export default function Clientes(){return <ResourcePage title="Clientes" description="CRM, histórico, preferências, consentimento de marketing e recorrência."/>}

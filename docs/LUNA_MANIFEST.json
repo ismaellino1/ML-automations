@@ -1,0 +1,361 @@
+{
+  "release": "ML_AUTOMACOES_PROD_FINAL_LUNA",
+  "release_date": "2026-09-17",
+  "base_contract": "001-042",
+  "overlay_migrations": "043-057",
+  "default_ai_model": "gpt-5.6-luna",
+  "workflows": 10,
+  "nodes": 75,
+  "files": [
+    {
+      "path": ".env.example",
+      "bytes": 402,
+      "sha256": "03229c980fac25d7fcc36e36256a1edb6b159bf3c68a197ce1a3e66c240ac66c"
+    },
+    {
+      "path": "FINAL_SCOPE.md",
+      "bytes": 1348,
+      "sha256": "a4c15a685759cddba76978f0f3efac6ab281b5f78408664309202b4b44190c17"
+    },
+    {
+      "path": "IMPLEMENTATION_ORDER.md",
+      "bytes": 1809,
+      "sha256": "ffc53e83a8a9cc3fb81a08a4e1c4f9ee6995c0998bbaf4357f7272be58bb8cb7"
+    },
+    {
+      "path": "README.md",
+      "bytes": 1400,
+      "sha256": "2897ac80af5b07a17c71acd6a2ec64dafa6db50761f0ba4b61370bdde5f828a8"
+    },
+    {
+      "path": "STATIC_VALIDATION_REPORT.md",
+      "bytes": 814,
+      "sha256": "59f11ae7c765d49606b04cfbe6198533b1491b231a87d626d2d3b3804c27c9d3"
+    },
+    {
+      "path": "apps/ml-console/index.html",
+      "bytes": 249,
+      "sha256": "a9ce0d32a0bb09203cce23c12c141da1eee447d89df7dc8cb2491fab5d041901"
+    },
+    {
+      "path": "apps/ml-console/package.json",
+      "bytes": 524,
+      "sha256": "99a2819f814da9456e21478d123e33cb4a516772b08288043f64104375ceae10"
+    },
+    {
+      "path": "apps/ml-console/src/components/Layout.tsx",
+      "bytes": 532,
+      "sha256": "979df11085ba3cf588f7bbc007cd58cf7c9a99329126ecebcb0f3af548b46ba7"
+    },
+    {
+      "path": "apps/ml-console/src/components/ResourcePage.tsx",
+      "bytes": 595,
+      "sha256": "a594d346687c4d9ed09e08499b96d8bea920e98e32df45c2d349166f6d3fc077"
+    },
+    {
+      "path": "apps/ml-console/src/lib/supabase.ts",
+      "bytes": 772,
+      "sha256": "a4009e09763118ee538319fdc0ee212373f39255640270f730bd18944cd315b4"
+    },
+    {
+      "path": "apps/ml-console/src/main.tsx",
+      "bytes": 1303,
+      "sha256": "b77924d584f55996c1404275a9fb5388d2e835fcac11e890c1e4fbf4802f3c3b"
+    },
+    {
+      "path": "apps/ml-console/src/pages/Agenda.tsx",
+      "bytes": 223,
+      "sha256": "33c06a6abac30ffbe15eff9e1eca6732c297a484acaf095ea4d3b6b9e9646578"
+    },
+    {
+      "path": "apps/ml-console/src/pages/Automacoes.tsx",
+      "bytes": 212,
+      "sha256": "324a626eae8411606b028c4f41684e2c43776398b7cf5027f066d3503a6cb87c"
+    },
+    {
+      "path": "apps/ml-console/src/pages/Campanhas.tsx",
+      "bytes": 221,
+      "sha256": "12e00473bcd788a0f2cd744c132be667793f8291ce6f9ffae44c53ef479cde58"
+    },
+    {
+      "path": "apps/ml-console/src/pages/Clientes.tsx",
+      "bytes": 222,
+      "sha256": "debb6e7eba22fa409e15cb6567a1d55207d08764cd2153c88bf323f2da7a23ff"
+    },
+    {
+      "path": "apps/ml-console/src/pages/Config.tsx",
+      "bytes": 206,
+      "sha256": "505cf43a03961efb813cd1d43a3cf81dd1f20cce4cd7f1ecbe1eb11a109103e6"
+    },
+    {
+      "path": "apps/ml-console/src/pages/Dashboard.tsx",
+      "bytes": 234,
+      "sha256": "afd3528fb99ff329031b064dcb02c020ac14377185858d71de4da6ac83406f71"
+    },
+    {
+      "path": "apps/ml-console/src/pages/Equipe.tsx",
+      "bytes": 212,
+      "sha256": "e154fb7ca7164c5d84561ffcb766aaf981936a99d66f9a70c522fb5b2b4db682"
+    },
+    {
+      "path": "apps/ml-console/src/pages/Incidentes.tsx",
+      "bytes": 221,
+      "sha256": "a690f2faf73fdcb354040e449c1ab7f15e9e7306f4a5fcc9e66479475b6cf9ff"
+    },
+    {
+      "path": "apps/ml-console/src/pages/Knowledge.tsx",
+      "bytes": 214,
+      "sha256": "cf3acdee1527a5387ac49f2a87228827b516e4906529473b5ea4feb79881d773"
+    },
+    {
+      "path": "apps/ml-console/src/pages/Produtos.tsx",
+      "bytes": 223,
+      "sha256": "561642e4df6c1ddd891dc3e294abc6c11bbecebfee335facb3e33a9ffeab57ff"
+    },
+    {
+      "path": "apps/ml-console/src/pages/Servicos.tsx",
+      "bytes": 213,
+      "sha256": "c4a273269b9af0f6fc5369462dcc5395432a03d9a1a4bb013a3529d5e4e11088"
+    },
+    {
+      "path": "apps/ml-console/src/styles.css",
+      "bytes": 922,
+      "sha256": "abfb304440aa84d1ceb38ef3dbce56248b1192a10f5278def2a96fe342ecd97a"
+    },
+    {
+      "path": "apps/ml-console/tsconfig.json",
+      "bytes": 516,
+      "sha256": "4d4a7e6d49b675b999a7abc6a11e7a40ccf3f1bcf903aee4b2b9964a8659ab58"
+    },
+    {
+      "path": "apps/ml-console/vite.config.ts",
+      "bytes": 129,
+      "sha256": "7b34ad64c4749e9ba9e65138ef3b9b718e7c0722319eae1faf96c8bb0b9a49e4"
+    },
+    {
+      "path": "docs/AI_MODEL_POLICY.md",
+      "bytes": 715,
+      "sha256": "f48b9b02ef81b7b658e4c8528f62e7ff79b326ff855c83d13ca12c933987ff90"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "bytes": 506,
+      "sha256": "7cd2d927b77408449d905f0cd1f8b783f9e9d1e757bd39fadc1c4d6c049fa6a5"
+    },
+    {
+      "path": "docs/OPERATIONS.md",
+      "bytes": 433,
+      "sha256": "6c1179d237beaf04d12292d330c21409ec5918109e68c9d5e8fc024e94310fad"
+    },
+    {
+      "path": "docs/SECURITY.md",
+      "bytes": 500,
+      "sha256": "254824f76e6717c400792f4e0bb1712af05302d27ff8f388470754ddbffcf09b"
+    },
+    {
+      "path": "docs/TEST_MATRIX.md",
+      "bytes": 828,
+      "sha256": "cbdb7cbe0f13312bb30b2f527f33cbb79675648a719a6f5a1f5154d6be851f8d"
+    },
+    {
+      "path": "n8n/01_ML_INBOUND_GATEWAY_PROD_FINAL.json",
+      "bytes": 5521,
+      "sha256": "8d081770f5e642643e81287a8036cd1dff1cd24bb7b7cf8193236c88ea1484e1"
+    },
+    {
+      "path": "n8n/02_ML_MEDIA_WORKER_PROD_FINAL.json",
+      "bytes": 4858,
+      "sha256": "7cf0b86c6765180e2886ed8d90bdb05b4c1f2a09c04137cc9a4231ee607af58b"
+    },
+    {
+      "path": "n8n/03_ML_CONVERSATION_WORKER_PROD_FINAL.json",
+      "bytes": 34537,
+      "sha256": "30a90fcc9e1e741a02e31aac62f9df5a7ec8e2ede60f9a1b7409f62d4af5d4b2"
+    },
+    {
+      "path": "n8n/04_ML_WHATSAPP_DELIVERY_PROD_FINAL.json",
+      "bytes": 5344,
+      "sha256": "9eeaaba5091bff750335c351d10daf79d524a100bad3eea0ad04be0256cc5531"
+    },
+    {
+      "path": "n8n/05_ML_GOOGLE_CALENDAR_PROD_FINAL.json",
+      "bytes": 20389,
+      "sha256": "2ad524d094c732c92f1420e2bf10c657af95522da240e61f9e5f15d7f47e4d77"
+    },
+    {
+      "path": "n8n/06_ML_CAMPAIGN_ENGINE_PROD_FINAL.json",
+      "bytes": 3242,
+      "sha256": "5c6a504a0aee00bfc7a06bd8d9e2c44c4979bf3937d575579945e6479ee929e3"
+    },
+    {
+      "path": "n8n/07_ML_AUTOMATION_SCHEDULER_PROD_FINAL.json",
+      "bytes": 5153,
+      "sha256": "8276a86dc4bfe8c523316778d5e1f8e62bb7e2421c42018b3d49bf912d38b136"
+    },
+    {
+      "path": "n8n/08_ML_CONTROL_PLANE_PROD_FINAL.json",
+      "bytes": 3350,
+      "sha256": "458fb243b6bd048ce0652ef399acd2ef89f5d722e7ac28c898d44ff9dc0a2b54"
+    },
+    {
+      "path": "n8n/09_ML_KNOWLEDGE_INGESTION_PROD_FINAL.json",
+      "bytes": 2554,
+      "sha256": "59f1932a9dd962fe9dac5ae10cc1adc5f1e8040895536da44a2203d67016c752"
+    },
+    {
+      "path": "n8n/99_ML_OBSERVABILITY_PROD_FINAL.json",
+      "bytes": 2471,
+      "sha256": "028b1858a13aab3dbc534b678eeae6991c55e9493780d5013296c8ce4e991d7c"
+    },
+    {
+      "path": "prompts/CAMPAIGN_COPY.md",
+      "bytes": 331,
+      "sha256": "0c8ce737df8967516e9ee1706a36f2d6d2d5b9e5206b436d5d53caca4c40f36a"
+    },
+    {
+      "path": "prompts/MEDIA_ANALYST.md",
+      "bytes": 1002,
+      "sha256": "1eee14c32ba3c460f335cdb3948f11ff23a30a07467871610586251a2cfa85c8"
+    },
+    {
+      "path": "prompts/ORCHESTRATOR.md",
+      "bytes": 3845,
+      "sha256": "9194175566a4e7c7749ac2aa9a56c8a533a7487ef2ca656e1b422b787245c339"
+    },
+    {
+      "path": "prompts/RESPONSE_ENGINE.md",
+      "bytes": 1425,
+      "sha256": "5bde8ba31a7a00666fcdec93a8d09d926c5e3847ba7fd77f3eaa28edb81f470e"
+    },
+    {
+      "path": "schemas/control-plane.openapi.yaml",
+      "bytes": 674,
+      "sha256": "88ed0f8f86c9449f7f880c92ff32ad13416aecc9b8864c1a3c9e95d6fd49d6ea"
+    },
+    {
+      "path": "schemas/orchestrator.schema.json",
+      "bytes": 3269,
+      "sha256": "ba6d837dc7ec0f862c6be06718c9481c789b8276545c6876ba5d399842b606ef"
+    },
+    {
+      "path": "schemas/response.schema.json",
+      "bytes": 468,
+      "sha256": "ddbb336d8ec302055e257e1ff4f3bf2c519625baf3f3a15d25d6ca23673c85a5"
+    },
+    {
+      "path": "scripts/validate_release.py",
+      "bytes": 3197,
+      "sha256": "055b0ede862c20aea9b180f234e536f1589b8760f0bd21630038e231c7995e08"
+    },
+    {
+      "path": "scripts/validate_workflows.py",
+      "bytes": 897,
+      "sha256": "18097f38a6694bf99f13ac942ce28d29517ff7eceaa8467369e39262074a6ab8"
+    },
+    {
+      "path": "supabase/functions/control-api/index.ts",
+      "bytes": 1547,
+      "sha256": "be51db77305aed2f5ea4f6449bbc57743b1d9f87b708cc1d6d0582021f8cbf5d"
+    },
+    {
+      "path": "supabase/functions/media-processor/index.ts",
+      "bytes": 3921,
+      "sha256": "8c42eb8383c36b22ae0e6a920e2580b5f001663f96033ac455f8fed1c2a44252"
+    },
+    {
+      "path": "supabase/migrations/043_prod_job_queue.sql",
+      "bytes": 6836,
+      "sha256": "747a507fe05edf1a4cdc221bcadb14c525fb1aa14f4542023f8020184e624069"
+    },
+    {
+      "path": "supabase/migrations/044_catalog_knowledge_media.sql",
+      "bytes": 6999,
+      "sha256": "e0fff688927d799c5629c4ef45572cfe7006fbdb472b5c58af15dca67b122c1d"
+    },
+    {
+      "path": "supabase/migrations/045_marketing_campaigns.sql",
+      "bytes": 5129,
+      "sha256": "a61b2866a63d33cfab6cef5e877fcdcd275296aefee28f993256e783639d2ace"
+    },
+    {
+      "path": "supabase/migrations/046_automation_reminders.sql",
+      "bytes": 1067,
+      "sha256": "e4a8536e2e9751084d5426030e8fa75405e4e0db688fee6ca2e4399e39976005"
+    },
+    {
+      "path": "supabase/migrations/047_rbac_control_plane.sql",
+      "bytes": 5122,
+      "sha256": "cbcf5388ca9760de54440ed21958a87646d8d9841b4d7fee290850f295a6f1aa"
+    },
+    {
+      "path": "supabase/migrations/048_runtime_v5_adapters.sql",
+      "bytes": 12028,
+      "sha256": "0eb0752906c5bf8c8c09208b80b568b29202edb8e4875888071b621fb802ab30"
+    },
+    {
+      "path": "supabase/migrations/049_observability.sql",
+      "bytes": 1205,
+      "sha256": "556519a8ecca7f9590bcd513409e21ad4ff34be8d8bc59bdadeb98ffb02b12cb"
+    },
+    {
+      "path": "supabase/migrations/050_security_rls.sql",
+      "bytes": 1464,
+      "sha256": "f7c8a1e8a6bf4d45b5c23f604e751a460fe995847855a79347b3b42eb358ce82"
+    },
+    {
+      "path": "supabase/migrations/051_whatsapp_calendar_hardening.sql",
+      "bytes": 26221,
+      "sha256": "3de5ceba0e42f2442e4e4d1f5e9711d90889f6fb5d67e183a90f0685a7bb308e"
+    },
+    {
+      "path": "supabase/migrations/052_engagement_automation_v3.sql",
+      "bytes": 21422,
+      "sha256": "33cb63182837d87f5d498fe6eef6eab0b841866298a3cbd5f537f085f97f8e95"
+    },
+    {
+      "path": "supabase/migrations/053_waitlist_engine_v2.sql",
+      "bytes": 11550,
+      "sha256": "ec395de75a763131487a4e96a1e8813aa1f487c26414ce5d9b0d63edd159ad83"
+    },
+    {
+      "path": "supabase/migrations/054_runtime_final.sql",
+      "bytes": 11111,
+      "sha256": "85c0a3790ebd3d2e9de1573a1d0dbf58a7d4c8be1f2e1eb9e9f4bde6cf705702"
+    },
+    {
+      "path": "supabase/migrations/055_control_plane_final.sql",
+      "bytes": 23182,
+      "sha256": "00d58f1e8335d36f48aa5a40c9096652cb6808dcb898fa6607bce2f07a67d7a6"
+    },
+    {
+      "path": "supabase/migrations/056_whatsapp_webhook_final.sql",
+      "bytes": 2979,
+      "sha256": "dde8bb0cde844598e89a9958cd465f698a3572a41a34f635ea281d6f1b18eb23"
+    },
+    {
+      "path": "supabase/migrations/057_ai_runtime_policy_final.sql",
+      "bytes": 2327,
+      "sha256": "4df00c58128c6271cd031587673a9c9b1bcaafc3706c6f758569cac9534e4df3"
+    },
+    {
+      "path": "supabase/one_shot/043_057_ML_PROD_FINAL_AFTER_042.sql",
+      "bytes": 141354,
+      "sha256": "fd55bdb62db7c8948f02d64e3f897065f38f49469544b2679aac742b0d3aa902"
+    },
+    {
+      "path": "supabase/preflight/BASE_001_042_CONTRACT.sql",
+      "bytes": 2921,
+      "sha256": "8aa9119a81022d34b871774c953e80a99c48938ebd12b024161ce5726ab84711"
+    },
+    {
+      "path": "supabase/tests/001_job_queue.sql",
+      "bytes": 208,
+      "sha256": "130f21fc902a6a599816e62c26cca993b3d0e23ba4fdfa4c6f079d3b65cfb919"
+    },
+    {
+      "path": "supabase/tests/002_security_notes.sql",
+      "bytes": 226,
+      "sha256": "3cb88d98f2fdea1ed0f2d3d82f6223356c24c5a442a66213480fcfa92a54df5c"
+    }
+  ]
+}

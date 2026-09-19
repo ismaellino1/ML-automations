@@ -1,0 +1,1 @@
+import {ResourcePage} from "../components/ResourcePage"; export default function Knowledge(){return <ResourcePage title="Knowledge" description="FAQ, políticas e conhecimento usado pela IA sem inventar fatos."/>}

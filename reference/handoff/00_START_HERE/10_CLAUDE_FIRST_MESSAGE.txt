@@ -1,0 +1,19 @@
+Extraia este pacote e trate-o como o handoff integral da ML Automações.
+
+Comece obrigatoriamente por:
+1. `README_FIRST.md`
+2. `00_START_HERE/00_MASTER_PROMPT_CLAUDE.md`
+3. `00_START_HERE/01_PRODUCT_VISION_AND_DOMAIN_REQUIREMENTS.md`
+4. `00_START_HERE/02_CURRENT_STATE_AND_TRUST_ORDER.md`
+5. `10_DATABASE_REALITY_AND_PATCHES/`
+6. `00_START_HERE/06_HANDOFF_MANIFEST.md`
+
+Leia o pacote inteiro antes de propor mudanças destrutivas.
+
+Nesta primeira etapa, NÃO altere código, NÃO execute migrations, NÃO toque em PROD e NÃO presuma que documentação antiga vence o banco real. Faça a auditoria inicial solicitada no prompt mestre.
+
+Depois da auditoria, quero que você assuma a execução do projeto com alta autonomia: produza o máximo possível de código, migrations, testes, workflows, interfaces, scripts, documentação e validações, deixando para mim principalmente credenciais/configurações externas, testes reais e decisões de produto realmente bloqueantes.
+
+Mantenha `MANUAL_ACTIONS_FOR_ISMAEL.md` como lista exata das únicas ações que dependem de mim.
+
+Se encontrar conflito entre arquivos, investigue e registre. Não invente contratos ausentes.

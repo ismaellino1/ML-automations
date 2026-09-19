@@ -1,0 +1,124 @@
+{
+  "name": "01 - ML INBOUND GATEWAY PROD FINAL",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -620,
+        0
+      ],
+      "id": "d83f131c-1163-5b00-81b9-aaeb01e5d887",
+      "name": "00 - WHATSAPP TRIGGER",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = $json.entry?.[0]?.changes?.[0]?.value ?? $json;\nconst message = raw.messages?.[0] ?? null;\nconst contact = raw.contacts?.[0] ?? null;\nif (!message) return {json:{event_type:'IGNORE', reason:'NO_MESSAGE', raw}};\nconst type = String(message.type ?? 'unknown').toLowerCase();\nlet text = message.text?.body ?? null;\nlet interaction = null;\nlet media = null;\n\nif (type === 'interactive') {\n  const reply = message.interactive?.button_reply ?? message.interactive?.list_reply ?? null;\n  if (reply) {\n    const id = String(reply.id ?? '');\n    const slot = id.match(/^slot\\|([0-9a-f-]{36})\\|(\\d+)$/i);\n    const rebook = id.match(/^rebook\\|([0-9a-f-]{36})$/i);\n    interaction = {\n      kind: message.interactive?.button_reply ? 'BUTTON_REPLY' : 'LIST_REPLY',\n      reply_id: id,\n      title: reply.title ?? null,\n      action: slot ? 'SELECT_SLOT' : rebook ? 'REBOOK_APPOINTMENT' : null,\n      slot_offer_id: slot ? slot[1] : null,\n      option_number: slot ? Number(slot[2]) : null,\n      appointment_id: rebook ? rebook[1] : null\n    };\n    text = reply.title ?? text;\n  }\n}\nif (['audio','image','document','video','sticker'].includes(type)) {\n  const m = message[type] ?? {};\n  media = {id:m.id ?? null, mime_type:m.mime_type ?? null, sha256:m.sha256 ?? null,\n           caption:m.caption ?? null, filename:m.filename ?? null};\n  text = m.caption ?? text;\n}\nconst ts = message.timestamp ? new Date(Number(message.timestamp)*1000).toISOString() : new Date().toISOString();\nreturn {json:{\n  event_type:'INBOUND_MESSAGE',\n  channel:{type:'WHATSAPP',provider:'META',external_channel_id:raw.metadata?.phone_number_id ?? null},\n  customer:{external_user_id:message.from ?? null,profile_name:contact?.profile?.name ?? null},\n  message:{external_message_id:message.id ?? null,idempotency_key:message.id ? `IN:META:${message.id}` : null,\n           type,text,interaction,media,reply_to_external_message_id:message.context?.id ?? null,\n           provider_timestamp:ts,raw_payload:raw},\n  received_at:new Date().toISOString()\n}};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -360,
+        0
+      ],
+      "id": "c9601003-fd36-5e1a-aada-ec0552014d67",
+      "name": "01 - NORMALIZAR EVENTO META"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.ingest_whatsapp_event_v1($1::TEXT,$2::TEXT,$3::TEXT,$4::TEXT,$5::TEXT,$6::TEXT,$7::TEXT,$8::TEXT,$9::JSONB,$10::JSONB,$11::JSONB,$12::TIMESTAMPTZ,$13::TEXT) AS ingest;",
+        "options": {
+          "queryReplacement": "={{ [$json.channel.external_channel_id,$json.channel.type,$json.channel.provider,$json.customer.external_user_id,$json.customer.profile_name,$json.message.idempotency_key,$json.message.external_message_id,$json.message.type,JSON.stringify($json.message.interaction ?? {}),JSON.stringify($json.message.media ?? {}),JSON.stringify({text:$json.message.text,raw_payload:$json.message.raw_payload,reply_to_external_message_id:$json.message.reply_to_external_message_id}),$json.message.provider_timestamp,$execution.id] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -80,
+        0
+      ],
+      "id": "46a15898-32a6-50d1-a1ca-e800b8edbd08",
+      "name": "02 - INGEST CORE",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.ingest?.ok !== true) throw new Error(`INGEST_FAILED:${$json.ingest?.code ?? 'UNKNOWN'}`); return {json:$json};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ],
+      "id": "2f3fbcee-1c16-5973-b98b-08ec8d0a0df9",
+      "name": "03 - ASSERT INGEST"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "00 - WHATSAPP TRIGGER": {
+      "main": [
+        [
+          {
+            "node": "01 - NORMALIZAR EVENTO META",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "01 - NORMALIZAR EVENTO META": {
+      "main": [
+        [
+          {
+            "node": "02 - INGEST CORE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 - INGEST CORE": {
+      "main": [
+        [
+          {
+            "node": "03 - ASSERT INGEST",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3a08c915-e268-54e3-85bc-e845b6bd3dbf",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

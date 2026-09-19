@@ -1,0 +1,282 @@
+[
+  {
+    "post_reschedule_state": {
+      "slot_offer": {
+        "id": "7d4142fe-d206-4951-9c76-4733787a0e00",
+        "status": "SELECTED",
+        "metadata": {
+          "timezone": "America/Sao_Paulo",
+          "flow_type": "RESCHEDULE",
+          "prepared_at": "2026-09-17T17:30:39.227378+00:00",
+          "search_scope": "TARGET_PROFESSIONAL_TARGET_DATE",
+          "source_end_at": "2026-09-21T13:15:00+00:00",
+          "generation_code": "AVAILABLE_SLOTS",
+          "source_start_at": "2026-09-21T12:45:00+00:00",
+          "original_professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+          "requested_professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+          "rescheduling_source_status": "CONFIRMED",
+          "allow_professional_fallback": false,
+          "rescheduling_source_appointment_id": "964dad42-641e-409e-a51b-00a42b8fc060"
+        },
+        "date_from": "2026-09-21",
+        "time_from": null,
+        "created_at": "2026-09-17T17:30:39.227378+00:00",
+        "date_until": "2026-09-21",
+        "expires_at": "2026-09-17T17:40:39.227378+00:00",
+        "time_until": null,
+        "updated_at": "2026-09-17T17:32:39.964139+00:00",
+        "business_id": "89dffc95-4b4c-41dd-8da9-f3aeb61a8131",
+        "customer_id": "88ee445a-e7c2-4770-a0eb-979b2eb8cc0f",
+        "selected_at": "2026-09-17T17:32:39.964139+00:00",
+        "option_count": 5,
+        "conversation_id": "3d1a62cc-4f9c-4d82-b298-e2b86cd2e7a7",
+        "requested_service_ids": [
+          "665265b3-a270-4767-b56d-549dc48a5a9d"
+        ],
+        "selected_option_number": 3,
+        "requested_professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0"
+      },
+      "active_holds": [],
+      "conversation": {
+        "id": "3d1a62cc-4f9c-4d82-b298-e2b86cd2e7a7",
+        "slots": {},
+        "context": {
+          "last_analysis": {
+            "intent": "BOOK_APPOINTMENT",
+            "source": "DETERMINISTIC",
+            "message_id": "0012f6fb-817c-44f7-8680-0549e2a49ebf",
+            "analyzed_at": "2026-09-14T21:04:30.385268+00:00",
+            "intent_confidence": 0.99,
+            "service_confidence": 0.95
+          }
+        },
+        "version": 115,
+        "updated_at": "2026-09-17T17:32:43.059524+00:00",
+        "current_intent": null,
+        "pending_action": null
+      },
+      "source_events": [
+        {
+          "id": "8492cffb-757e-4046-8bf4-349356e41f0e",
+          "payload": {
+            "hold_expires_at": "2026-09-17T02:15:43.640231+00:00",
+            "availability_check": {
+              "code": "AVAILABLE",
+              "end_at": "2026-09-21T13:15:00+00:00",
+              "weekday": 1,
+              "start_at": "2026-09-21T12:45:00+00:00",
+              "timezone": "America/Sao_Paulo",
+              "available": true,
+              "business_id": "89dffc95-4b4c-41dd-8da9-f3aeb61a8131",
+              "blocked_end_at": "2026-09-21T13:15:00+00:00",
+              "professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+              "blocked_start_at": "2026-09-21T12:45:00+00:00"
+            }
+          },
+          "actor_ref": null,
+          "to_status": "HOLD",
+          "actor_type": "AUTOMATION",
+          "created_at": "2026-09-17T02:10:43.640231+00:00",
+          "event_type": "HOLD_CREATED",
+          "business_id": "89dffc95-4b4c-41dd-8da9-f3aeb61a8131",
+          "from_status": null,
+          "appointment_id": "964dad42-641e-409e-a51b-00a42b8fc060"
+        },
+        {
+          "id": "f02ca359-f5f9-49cb-84cb-f836b6ed13b2",
+          "payload": {},
+          "actor_ref": null,
+          "to_status": "CONFIRMED",
+          "actor_type": "AUTOMATION",
+          "created_at": "2026-09-17T02:10:43.640231+00:00",
+          "event_type": "CONFIRMED",
+          "business_id": "89dffc95-4b4c-41dd-8da9-f3aeb61a8131",
+          "from_status": "HOLD",
+          "appointment_id": "964dad42-641e-409e-a51b-00a42b8fc060"
+        },
+        {
+          "id": "af27fc5f-b0df-4301-bb25-71c01c2c6d40",
+          "payload": {
+            "new_end_at": "2026-09-21T13:45:00+00:00",
+            "old_end_at": "2026-09-21T13:15:00+00:00",
+            "new_start_at": "2026-09-21T13:15:00+00:00",
+            "old_start_at": "2026-09-21T12:45:00+00:00",
+            "slot_offer_id": "7d4142fe-d206-4951-9c76-4733787a0e00",
+            "source_channel": "WHATSAPP",
+            "source_provider": "META",
+            "replacement_appointment_id": "009a482b-ed29-4ca5-aa1d-a7f8d9059c05"
+          },
+          "actor_ref": "88ee445a-e7c2-4770-a0eb-979b2eb8cc0f",
+          "to_status": "RESCHEDULED",
+          "actor_type": "CUSTOMER",
+          "created_at": "2026-09-17T17:32:39.964139+00:00",
+          "event_type": "RESCHEDULED",
+          "business_id": "89dffc95-4b4c-41dd-8da9-f3aeb61a8131",
+          "from_status": "CONFIRMED",
+          "appointment_id": "964dad42-641e-409e-a51b-00a42b8fc060"
+        }
+      ],
+      "calendar_sync_rows": [
+        {
+          "id": "db8a8644-63a5-4696-bd58-039f60d00d53",
+          "provider": "GOOGLE",
+          "synced_at": "2026-09-17T02:10:45.303388+00:00",
+          "created_at": "2026-09-17T02:10:43.903674+00:00",
+          "last_error": null,
+          "updated_at": "2026-09-17T02:10:45.303388+00:00",
+          "business_id": "89dffc95-4b4c-41dd-8da9-f3aeb61a8131",
+          "sync_status": "SYNCED",
+          "attempt_count": 1,
+          "appointment_id": "964dad42-641e-409e-a51b-00a42b8fc060",
+          "last_operation": "CREATE",
+          "last_attempt_at": "2026-09-17T02:10:43.903674+00:00",
+          "professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+          "request_payload": {},
+          "response_payload": {
+            "id": "firpqpfed8lgdjth5aj9rilt44",
+            "end": {
+              "dateTime": "2026-09-21T10:15:00-03:00",
+              "timeZone": "America/Sao_Paulo"
+            },
+            "etag": "\"3579222090091934\"",
+            "kind": "calendar#event",
+            "start": {
+              "dateTime": "2026-09-21T09:45:00-03:00",
+              "timeZone": "America/Sao_Paulo"
+            },
+            "status": "confirmed",
+            "created": "2026-09-17T02:10:44.000Z",
+            "creator": {
+              "email": "<REDACTED_EMAIL>"
+            },
+            "iCalUID": "firpqpfed8lgdjth5aj9rilt44@google.com",
+            "summary": "Corte - Mael Guedes | Pedro",
+            "updated": "2026-09-17T02:10:45.045Z",
+            "htmlLink": "https://www.google.com/calendar/event?eid=ZmlycHFwZmVkOGxnZGp0aDVhajlyaWx0NDQgODI0OWVhZmRhMzIyMDNiODg5MjQxODY0MmRjMjAwM2QyNmQ2NGU1OGVkOGI1YjFkMGQxYjE0MDk2YTI1NjNjZkBn",
+            "sequence": 0,
+            "eventType": "default",
+            "organizer": {
+              "self": true,
+              "email": "<REDACTED_CALENDAR_ID>",
+              "displayName": "Pedro - Barbearia Laboratório"
+            },
+            "reminders": {
+              "useDefault": true
+            },
+            "description": "Cliente: Mael Guedes\nServiço: Corte\nProfissional: Pedro\nValor: R$ 30,00\nAppointment ID: 964dad42-641e-409e-a51b-00a42b8fc060\n\nCriado automaticamente pela ML Automações."
+          },
+          "external_event_id": "firpqpfed8lgdjth5aj9rilt44",
+          "external_calendar_id": "<REDACTED_CALENDAR_ID>"
+        }
+      ],
+      "replacement_events": [
+        {
+          "id": "32a0f27a-20cc-4016-80c4-19481b11d47f",
+          "payload": {
+            "hold_expires_at": "2026-09-17T17:37:39.964139+00:00",
+            "availability_check": {
+              "code": "AVAILABLE",
+              "end_at": "2026-09-21T13:45:00+00:00",
+              "weekday": 1,
+              "start_at": "2026-09-21T13:15:00+00:00",
+              "timezone": "America/Sao_Paulo",
+              "available": true,
+              "business_id": "89dffc95-4b4c-41dd-8da9-f3aeb61a8131",
+              "blocked_end_at": "2026-09-21T13:45:00+00:00",
+              "professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+              "blocked_start_at": "2026-09-21T13:15:00+00:00"
+            }
+          },
+          "actor_ref": null,
+          "to_status": "HOLD",
+          "actor_type": "AUTOMATION",
+          "created_at": "2026-09-17T17:32:39.964139+00:00",
+          "event_type": "HOLD_CREATED",
+          "business_id": "89dffc95-4b4c-41dd-8da9-f3aeb61a8131",
+          "from_status": null,
+          "appointment_id": "009a482b-ed29-4ca5-aa1d-a7f8d9059c05"
+        },
+        {
+          "id": "064c7be8-af11-4530-84e8-6c512487473f",
+          "payload": {},
+          "actor_ref": null,
+          "to_status": "CONFIRMED",
+          "actor_type": "AUTOMATION",
+          "created_at": "2026-09-17T17:32:39.964139+00:00",
+          "event_type": "CONFIRMED",
+          "business_id": "89dffc95-4b4c-41dd-8da9-f3aeb61a8131",
+          "from_status": "HOLD",
+          "appointment_id": "009a482b-ed29-4ca5-aa1d-a7f8d9059c05"
+        }
+      ],
+      "source_appointment": {
+        "id": "964dad42-641e-409e-a51b-00a42b8fc060",
+        "end_at": "2026-09-21T13:15:00+00:00",
+        "status": "RESCHEDULED",
+        "currency": "BRL",
+        "metadata": {
+          "rescheduling": {
+            "completed_at": "2026-09-17T17:32:39.964139+00:00",
+            "slot_offer_id": "7d4142fe-d206-4951-9c76-4733787a0e00",
+            "replacement_end_at": "2026-09-21T13:45:00+00:00",
+            "replacement_start_at": "2026-09-21T13:15:00+00:00",
+            "replacement_appointment_id": "009a482b-ed29-4ca5-aa1d-a7f8d9059c05"
+          }
+        },
+        "start_at": "2026-09-21T12:45:00+00:00",
+        "created_at": "2026-09-17T02:10:43.640231+00:00",
+        "updated_at": "2026-09-17T17:32:39.964139+00:00",
+        "business_id": "89dffc95-4b4c-41dd-8da9-f3aeb61a8131",
+        "customer_id": "88ee445a-e7c2-4770-a0eb-979b2eb8cc0f",
+        "total_price": 30,
+        "cancelled_at": null,
+        "completed_at": null,
+        "confirmed_at": "2026-09-17T02:10:43.640231+00:00",
+        "checked_in_at": null,
+        "blocked_period": "[\"2026-09-21 12:45:00+00\",\"2026-09-21 13:15:00+00\")",
+        "source_channel": "WHATSAPP",
+        "hold_expires_at": "2026-09-17T02:15:43.640231+00:00",
+        "professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+        "source_provider": "META",
+        "cancellation_reason": null,
+        "buffer_after_minutes": 0,
+        "buffer_before_minutes": 0,
+        "total_service_minutes": 30
+      },
+      "replacement_appointment": {
+        "id": "009a482b-ed29-4ca5-aa1d-a7f8d9059c05",
+        "end_at": "2026-09-21T13:45:00+00:00",
+        "status": "CONFIRMED",
+        "currency": "BRL",
+        "metadata": {
+          "rescheduling": {
+            "completed_at": "2026-09-17T17:32:39.964139+00:00",
+            "slot_offer_id": "7d4142fe-d206-4951-9c76-4733787a0e00",
+            "source_end_at": "2026-09-21T13:15:00+00:00",
+            "source_start_at": "2026-09-21T12:45:00+00:00",
+            "source_appointment_id": "964dad42-641e-409e-a51b-00a42b8fc060"
+          }
+        },
+        "start_at": "2026-09-21T13:15:00+00:00",
+        "created_at": "2026-09-17T17:32:39.964139+00:00",
+        "updated_at": "2026-09-17T17:32:39.964139+00:00",
+        "business_id": "89dffc95-4b4c-41dd-8da9-f3aeb61a8131",
+        "customer_id": "88ee445a-e7c2-4770-a0eb-979b2eb8cc0f",
+        "total_price": 30,
+        "cancelled_at": null,
+        "completed_at": null,
+        "confirmed_at": "2026-09-17T17:32:39.964139+00:00",
+        "checked_in_at": null,
+        "blocked_period": "[\"2026-09-21 13:15:00+00\",\"2026-09-21 13:45:00+00\")",
+        "source_channel": "WHATSAPP",
+        "hold_expires_at": "2026-09-17T17:37:39.964139+00:00",
+        "professional_id": "b418ef1f-639a-4cf4-bbfe-978b9745c8d0",
+        "source_provider": "META",
+        "cancellation_reason": null,
+        "buffer_after_minutes": 0,
+        "buffer_before_minutes": 0,
+        "total_service_minutes": 30
+      }
+    }
+  }
+]

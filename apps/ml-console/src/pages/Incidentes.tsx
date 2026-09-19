@@ -1,0 +1,1 @@
+import {ResourcePage} from "../components/ResourcePage"; export default function Incidentes(){return <ResourcePage title="Incidentes" description="Erros, dead letters, retries, integrações e trilha de diagnóstico."/>}

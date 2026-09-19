@@ -1,0 +1,199 @@
+{
+  "name": "02 - ML MEDIA WORKER PROD FINAL",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 5
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -600,
+        0
+      ],
+      "id": "c7a86721-6503-582c-ade2-346e6d056b5a",
+      "name": "00 - POLL MEDIA"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM core.claim_media_processing_batch($1::INTEGER,$2::TEXT);",
+        "options": {
+          "queryReplacement": "={{ [10,$execution.id] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -360,
+        0
+      ],
+      "id": "1b33cf0a-9f19-5d40-9412-cf9ae29ff8a4",
+      "name": "01 - CLAIM MEDIA",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const job=$json.job??$json;if(!job.job_id||!job.media_id)throw new Error('INVALID_MEDIA_JOB');return {json:{job}};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        0
+      ],
+      "id": "3bad0c72-d638-5eb2-b7e0-a8babf717f00",
+      "name": "02 - VALIDAR MEDIA JOB"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ML_MEDIA_PROCESSOR_URL }}",
+        "options": {},
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.job }}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        140,
+        0
+      ],
+      "id": "0daf93ac-5c30-56ed-8913-c4fc16582ee1",
+      "name": "03 - PROCESSAR MEDIA",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "ML Internal API Auth"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.complete_media_processing_job($1::UUID,$2::JSONB) AS completion;",
+        "options": {
+          "queryReplacement": "={{ [ $('02 - VALIDAR MEDIA JOB').item.json.job.job_id, JSON.stringify($json) ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        420,
+        -100
+      ],
+      "id": "10af4602-25f8-5b3a-813f-921d986cffdc",
+      "name": "04 - COMPLETE MEDIA",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.fail_media_processing_job($1::UUID,$2::TEXT,$3::JSONB) AS failure;",
+        "options": {
+          "queryReplacement": "={{ [ $('02 - VALIDAR MEDIA JOB').item.json.job.job_id, $json.error?.message ?? $json.message ?? 'MEDIA_PROCESSING_FAILED', JSON.stringify($json) ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        420,
+        120
+      ],
+      "id": "1e077f29-4e4d-513d-afe1-342fcef35b4a",
+      "name": "05 - FAIL MEDIA",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "00 - POLL MEDIA": {
+      "main": [
+        [
+          {
+            "node": "01 - CLAIM MEDIA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "01 - CLAIM MEDIA": {
+      "main": [
+        [
+          {
+            "node": "02 - VALIDAR MEDIA JOB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 - VALIDAR MEDIA JOB": {
+      "main": [
+        [
+          {
+            "node": "03 - PROCESSAR MEDIA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03 - PROCESSAR MEDIA": {
+      "main": [
+        [
+          {
+            "node": "04 - COMPLETE MEDIA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "05 - FAIL MEDIA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a3ca953b-ffe4-51c1-808b-f1b0a454b7f0",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

@@ -1,0 +1,1 @@
+import {ResourcePage} from "../components/ResourcePage"; export default function Campanhas(){return <ResourcePage title="Campanhas" description="Campanhas, segmentação, frequência, opt-out, métricas e conversão."/>}

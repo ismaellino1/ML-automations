@@ -1,0 +1,23 @@
+openapi: 3.1.0
+info: {title: ML Control API, version: 1.0.0}
+paths:
+  /control:
+    post:
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [business_id, action]
+              properties:
+                business_id: {type: string, format: uuid}
+                action: {type: string}
+                arguments: {type: object}
+                idempotency_key: {type: string}
+      responses:
+        "200": {description: Action result}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}

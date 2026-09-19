@@ -1,0 +1,1 @@
+import {ResourcePage} from "../components/ResourcePage"; export default function Dashboard(){return <ResourcePage title="Dashboard" description="Visão operacional, agenda, mensagens, conversão, filas e saúde das integrações."/>}

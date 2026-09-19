@@ -1,0 +1,228 @@
+{
+  "name": "07 - ML AUTOMATION SCHEDULER PROD FINAL",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 60
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -600,
+        -80
+      ],
+      "id": "612df948-a7da-5f48-aa89-4dae156035c2",
+      "name": "00 - A CADA 60S"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.enqueue_due_reminders($1::INTEGER,$2::TEXT) AS result;",
+        "options": {
+          "queryReplacement": "={{ [500,$execution.id] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -340,
+        -80
+      ],
+      "id": "cb79656f-65c9-556e-a85b-2e6afd9f5119",
+      "name": "01 - REMINDERS",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.process_waitlist_automation_v1($1::INTEGER,$2::TEXT) AS result;",
+        "options": {
+          "queryReplacement": "={{ [250,$execution.id] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -80,
+        -80
+      ],
+      "id": "f3c7901d-cf99-5217-8146-4d326b17cc5d",
+      "name": "02 - WAITLIST",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.enqueue_due_reactivation($1::INTEGER,$2::TEXT) AS result;",
+        "options": {
+          "queryReplacement": "={{ [250,$execution.id] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        180,
+        -80
+      ],
+      "id": "5f1cd41a-36e5-5df2-b3b1-3daee4c13b9f",
+      "name": "03 - REACTIVATION",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 300
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -600,
+        160
+      ],
+      "id": "686748c3-fe95-5cbb-b8aa-7d89d0b7e235",
+      "name": "10 - A CADA 300S"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.run_housekeeping_v2($1::INTEGER,$2::TEXT) AS result;",
+        "options": {
+          "queryReplacement": "={{ [1000,$execution.id] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -340,
+        160
+      ],
+      "id": "ac09db4e-a7f2-578a-992f-72aa5993bb2e",
+      "name": "11 - HOUSEKEEPING",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT core.release_expired_job_leases($1::INTEGER) AS released;",
+        "options": {
+          "queryReplacement": "={{ [1000] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -80,
+        160
+      ],
+      "id": "032fa63e-2e0e-5357-8e27-20068feed326",
+      "name": "12 - RELEASE LEASES",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "00 - A CADA 60S": {
+      "main": [
+        [
+          {
+            "node": "01 - REMINDERS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "01 - REMINDERS": {
+      "main": [
+        [
+          {
+            "node": "02 - WAITLIST",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 - WAITLIST": {
+      "main": [
+        [
+          {
+            "node": "03 - REACTIVATION",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10 - A CADA 300S": {
+      "main": [
+        [
+          {
+            "node": "11 - HOUSEKEEPING",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11 - HOUSEKEEPING": {
+      "main": [
+        [
+          {
+            "node": "12 - RELEASE LEASES",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "305da970-60f1-577b-a97c-7d75d5f2fb3b",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

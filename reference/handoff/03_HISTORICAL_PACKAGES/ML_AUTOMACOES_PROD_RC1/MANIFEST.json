@@ -1,0 +1,43 @@
+{
+  "package": "ML_AUTOMACOES_PROD_RC1",
+  "generated_at": "2026-09-17",
+  "architecture": "PostgreSQL Core + n8n orchestration + async integration workers",
+  "workflows": [
+    {
+      "file": "01_ML_CORE_UNIVERSAL_PROD_RC1.json",
+      "name": "01 - ML CORE - UNIVERSAL PROD RC1",
+      "nodes": 21
+    },
+    {
+      "file": "02_ML_WORKER_WHATSAPP_OUTBOX_PROD_RC1.json",
+      "name": "02 - ML WORKER - WHATSAPP OUTBOX PROD RC1",
+      "nodes": 6
+    },
+    {
+      "file": "03_ML_WORKER_GOOGLE_CALENDAR_PROD_RC1.json",
+      "name": "03 - ML WORKER - GOOGLE CALENDAR PROD RC1",
+      "nodes": 17
+    },
+    {
+      "file": "04_ML_WORKER_SCHEDULER_PROD_RC1.json",
+      "name": "04 - ML WORKER - SCHEDULER PROD RC1",
+      "nodes": 4
+    },
+    {
+      "file": "05_ML_CONTROL_PLANE_INTERNAL_ACTIONS_RC1.json",
+      "name": "05 - ML CONTROL PLANE - INTERNAL ACTIONS RC1",
+      "nodes": 7
+    },
+    {
+      "file": "99_ML_ERROR_OBSERVABILITY_RC1.json",
+      "name": "99 - ML ERROR - OBSERVABILITY RC1",
+      "nodes": 3
+    }
+  ],
+  "source_references": [
+    "01 - CORE - UNIVERSAL V3 original",
+    "current V3 export",
+    "migrations through 042 (behavioral contract)"
+  ],
+  "database_status": "requires migration implementation per DATABASE_CONTRACT.md"
+}

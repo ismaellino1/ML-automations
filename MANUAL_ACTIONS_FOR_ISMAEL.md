@@ -26,8 +26,18 @@ Nunca peço secret/token/senha no chat.
   `business_code` existe e se `code` existe em `core.businesses` (confirma/refuta D.8).
 - **Como desfazer se falhar**: não aplicável — é somente leitura, não há o que desfazer.
 - **Risco**: nenhum (somente leitura).
-- **Status**: PENDENTE — bloqueia P0.6 (e a finalização segura de P0.1) até você devolver a
-  saída completa.
+- **Status**: **PARCIALMENTE ATENDIDA (2026-09-20)** — recebi a Seção 8 (checklist de existência,
+  18/18 itens respondidos). Resultado processado e registrado em
+  `docs/AUDIT/PHASE_A_INTROSPECTION_UPDATE.md` e no `RISK_REGISTER.md`. **Ainda faltam as Seções
+  0–7** (ambiente, inventário completo de tabelas, **assinaturas completas de função** — Seção 3,
+  **colunas completas** — Seção 4, constraints, triggers, controle de migrations). Existência
+  confirmada não é o mesmo que contrato confirmado: preciso da Seção 3 (assinaturas exatas de
+  `finalize_assistant_turn`, `select_and_confirm_slot_offer_option_v3`,
+  `prepare/complete/fail_appointment_calendar_sync`, `prepare_assistant_context`) e da Seção 4
+  (colunas de `appointment_calendar_syncs`, `customer_preferences`, `customer_engagement_profiles`)
+  antes de fechar P0.6 por completo e antes de considerar seguro trabalhar no motor de
+  Appointments em P1. **Reabra a saída completa do mesmo script** (rode de novo se precisar —
+  ainda é 100% somente leitura) e devolva o resultado inteiro, não só a Seção 8.
 
 ---
 

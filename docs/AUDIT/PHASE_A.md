@@ -10,8 +10,14 @@ PROD/STAGING não foram tocados.
 > achados D.1–D.21, matriz de classificação B, roadmap G, plano H, lacunas I, estratégia J) foi
 > entregue ao usuário na conversa e é reproduzido aqui para referência permanente do repositório.
 > Ver histórico da conversa da sessão para o texto completo original; este arquivo é atualizado
-> conforme os achados são confirmados/refutados pela introspecção real de STAGING (ver
-> `docs/AUDIT/PHASE_A_INTROSPECTION_UPDATE.md` quando disponível).
+> conforme os achados são confirmados/refutados pela introspecção real de STAGING.
+>
+> **Atualização 2026-09-20**: a primeira rodada de introspecção real (AÇÃO-001, Seção 8) já
+> voltou — 14 de 18 itens da Seção I confirmados existentes em STAGING, 3 confirmados genuinamente
+> ausentes (nenhum falso positivo da auditoria original até agora). Ver
+> `docs/AUDIT/PHASE_A_INTROSPECTION_UPDATE.md` para o detalhe completo e `RISK_REGISTER.md` para
+> os status atualizados. Ainda faltam as Seções 0–7 (assinaturas/colunas exatas) para fechar P0.6
+> por completo.
 
 ## Resumo executivo
 
